@@ -1,7 +1,7 @@
-# Real-Time Greeks Cache -- API Contract (v0.1)
+# Real-Time Greeks Cache -- API Contract (v0.2)
 
 Owner: Kevin Liang  
-Date: Aug 17, 2025  
+Date: Aug 18, 2025  
 Status: Draft  
 Audience: Client developers, backend developers, QA  
 
@@ -92,8 +92,9 @@ GET /price?symbol=SYMBOL%expiry=DATE&strike=K&type=C|P
             "theo_price": 12.3456,
             "delta": 0.53,
             "gamma": 0.0081,
-            "theta": -0.0123,
-            "vega": 0.145
+            "vega": 0.145,
+            "rho": 0.456,
+            "theta": -0.0123
         }
     }
 }
@@ -188,8 +189,9 @@ GET /portfolios/{portfolio_id}
   "summary_greeks": {
     "delta": 1.23,
     "gamma": 0.045,
-    "theta": -0.12,
-    "vega": 0.56
+    "vega": 0.56,
+    "rho": 0.453,
+    "theta": -0.12
   },
   "stale": false
 }
@@ -308,8 +310,9 @@ POST /portfolios/{portfolio_id}/revalue
   "summary_greeks": {
     "delta": 1.23,
     "gamma": 0.045,
-    "theta": -0.12,
-    "vega": 0.56
+    "vega": 0.56,
+    "rho": 0.345,
+    "theta": -0.12
   },
   "as_of": "2025-08-17T13:45:01Z",
   "stale": false
@@ -321,7 +324,7 @@ POST /portfolios/{portfolio_id}/revalue
 ## 6: Redis Key Schema
 
 - `(symbol:expiry:strike:type:time)` →  
-  `{ as_of, spot, vol, rate, div_yield, theo_price, delta, gamma, theta, vega, source, calibration_version, seqno, stale }`
+  `{ as_of, spot, vol, rate, div_yield, theo_price, delta, gamma, vega, rho, theta, source, calibration_version, seqno, stale }`
 
 - `(portfolio:{id}:positions)` →  
   Set of `position_id`s
