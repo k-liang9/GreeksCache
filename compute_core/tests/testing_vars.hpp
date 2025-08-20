@@ -2,14 +2,18 @@
 #define TESTING_VARS
 
 #include <string>
+#include <vector>
+#include <string_view>
+
+using namespace std;
 
 namespace test {
-    extern float vol;
-    extern std::string T;
-    extern float K;
-    extern float spot;
-    extern float risk_free_rate;
-    extern float dividend;
+    extern vector<double> vol;
+    extern vector<string_view> T;
+    extern vector<double> K;
+    extern vector<double> spot;
+    extern double risk_free_rate;
+    extern vector<double> dividend;
 }
 
 #endif
