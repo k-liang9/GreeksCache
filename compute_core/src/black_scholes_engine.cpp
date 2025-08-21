@@ -9,7 +9,7 @@
 #include <experimental/simd>
 #include "utils.hpp"
 #include "testing_vars.hpp"
-#include "eur_greeks.hpp"
+#include "black_scholes_engine.hpp"
 
 using namespace std;
 

@@ -6,8 +6,10 @@ set(CMAKE_CXX_STANDARD 23)
 
 add_executable(main
     src/main.cpp
-    src/eur_greeks.cpp
+    src/black_scholes_engine.cpp
     src/utils.cpp
+    src/contracts.cpp
+    src/market_data.cpp
     tests/testing_vars.cpp
     )
 
