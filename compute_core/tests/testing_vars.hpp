@@ -4,16 +4,14 @@
 #include <string>
 #include <vector>
 #include <string_view>
+#include "contracts.hpp"
+#include "market_data.hpp"
 
 using namespace std;
 
 namespace test {
-    extern vector<double> vol;
-    extern vector<string_view> T;
-    extern vector<double> K;
-    extern vector<double> spot;
-    extern double risk_free_rate;
-    extern vector<double> dividend;
+    extern vector<Contract> contracts;
+    extern MarketData market_data;
 }
 
 #endif

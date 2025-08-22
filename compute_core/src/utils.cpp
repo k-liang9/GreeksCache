@@ -7,17 +7,15 @@
 
 using namespace std;
 
-void time_to_expiry(const vector<string_view>& Ts, const tm& now, vector<double>& tau) {
-    for (string_view T : Ts) {
-        tm T_tm;
-        parse_time(T, T_tm);
-        int delta_day = T_tm.tm_yday - now.tm_yday;
+void time_to_expiry(const vector<tm>& Ts, const tm& now, vector<double>& tau) {
+    for (auto& T : Ts) {
+        int delta_day = T.tm_yday - now.tm_yday;
         int delta_year;
         if (delta_day < 0) {
             delta_day += 365;
-            delta_year = T_tm.tm_year - 1 - now.tm_year;
+            delta_year = T.tm_year - 1 - now.tm_year;
         } else {
-            delta_year = T_tm.tm_year - now.tm_year;
+            delta_year = T.tm_year - now.tm_year;
         }
 
         tau.push_back(delta_year + delta_day/365.0);

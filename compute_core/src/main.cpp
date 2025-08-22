@@ -1,23 +1,39 @@
 #include <iostream>
 #include <vector>
-#include "eur_greeks.hpp"
+#include "bs_engine.hpp"
 #include "testing_vars.hpp"
 
 using namespace std;
 
 int main() {
     vector<array<double, 6>> greeks;
-    EurPutContractBatch batch = EurPutContractBatch();
-    batch.compute_greeks(greeks, test::spot, test::K, test::T, test::vol, test::dividend, test::risk_free_rate);
-    for (size_t i = 0; i < greeks.size(); ++i) {
-        const auto& greek_array = greeks[i];
-        cout << "Contract " << i + 1 << ":" << endl;
-        cout << "  Price: " << greek_array[0] << endl;
-        cout << "  Delta: " << greek_array[1] << endl;
-        cout << "  Gamma: " << greek_array[2] << endl;
-        cout << "  Vega:  " << greek_array[3] << endl;
-        cout << "  Rho:   " << greek_array[4] << endl;
-        cout << "  Theta: " << greek_array[5] << endl;
+    string symbol = "AAPL";
+    ContractsBook contracts_book{};
+    for (Contract& contract : test::contracts) {
+        contracts_book.add_contract(contract);
+    }
+
+    ContractsBatch& AAPL_contracts = contracts_book.contracts_book()[symbol];
+    BsEngine::compute_greeks(AAPL_contracts, test::market_data);
+
+    const array<const char*, NUM_OPTION_TYPES> type_names = {"CALL", "PUT"};
+    for (int type = 0; type < NUM_OPTION_TYPES; ++type) {
+        const auto& prices = AAPL_contracts.prices_[type];
+        const auto& deltas = AAPL_contracts.deltas_[type];
+        const auto& gammas = AAPL_contracts.gammas_[type];
+        const auto& vegas  = AAPL_contracts.vegas_[type];
+        const auto& rhos   = AAPL_contracts.rhos_[type];
+        const auto& thetas = AAPL_contracts.thetas_[type];
+        cout << type_names[type] << " contracts:" << endl;
+        for (size_t i = 0; i < prices.size(); ++i) {
+            cout << "  Contract " << i + 1 << ":" << endl;
+            cout << "    Price=" << prices[i] << endl;
+            cout << "    Delta=" << deltas[i] << endl;
+            cout << "    Gamma=" << gammas[i] << endl;
+            cout << "    Vega=" << vegas[i] << endl;
+            cout << "    Rho=" << rhos[i] << endl;
+            cout << "    Theta=" << thetas[i] << endl;
+        }
         cout << endl;
     }
     return 0;

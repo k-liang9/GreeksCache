@@ -3,14 +3,17 @@
 #include <array>
 #include <unordered_map>
 #include "contracts.hpp"
+#include "utils.hpp"
 
 using namespace std;
 
-ContractsBatch::ContractsBatch(string& symbol) : symbol_{symbol} {}
+ContractsBatch::ContractsBatch(string symbol) : symbol_{symbol} {}
 
 void ContractsBatch::add_contract(Contract& contract) {
-    strikes_[contract.type].emplace_back(move(contract.strike));
-    expiries_[contract.type].emplace_back(move(contract.expiry));
+    strikes_[contract.type].push_back(contract.strike);
+    tm expiry;
+    parse_time(contract.expiry, expiry);
+    expiries_[contract.type].push_back(expiry);
 }
 
 void ContractsBook::add_contract(Contract& contract) {
