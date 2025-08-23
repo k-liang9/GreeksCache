@@ -2,7 +2,6 @@
 #include <string_view>
 #include <vector>
 #include <chrono>
-#include <iomanip>
 #include <cmath>
 
 using namespace std;
@@ -22,10 +21,12 @@ void time_to_expiry(const vector<tm>& Ts, const tm& now, vector<double>& tau) {
     }
 }
 
-void get_cur_time(tm& time) {
-    auto now_tp = chrono::system_clock::now();
-    std::time_t now_c = chrono::system_clock::to_time_t(now_tp);
-    time = *std::gmtime(&now_c);
+t_ns now() {
+    return static_cast<t_ns>(
+        chrono::duration_cast<chrono::nanoseconds>(
+            chrono::system_clock::now().time_since_epoch()
+        ).count()
+    );
 }
 
 void parse_time(string_view T, tm& exp_time) {

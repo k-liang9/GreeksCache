@@ -1,4 +1,5 @@
 #include "testing_vars.hpp"
+#include "utils.hpp"
 
 using namespace std;
 
@@ -16,9 +17,7 @@ namespace test {
         103.0,
         0.05,
         0.025,
-        array<vector<double>, 2>{
-            vector<double>{0.2, 0.4, 0.15, 0.33, 0.7, 0.05},
-            vector<double>{}
-        }
+        0.2,
+        now()
     };
 }

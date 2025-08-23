@@ -5,6 +5,7 @@
 #include <vector>
 #include <array>
 #include "options.hpp"
+#include "types.hpp"
 
 using namespace std;
 
@@ -13,7 +14,8 @@ struct MarketData {
     double spot;
     double rate;
     double div_yield;
-    array<vector<double>, NUM_OPTION_TYPES> vols; //FIXME: currently giving a dummy vector for volatility. Need to implement IV surface later
+    double vol;
+    t_ns ts_ns;
 };
 
 #endif

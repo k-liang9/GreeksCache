@@ -4,15 +4,21 @@
 #include <vector>
 #include <string_view>
 #include <array>
-#include "contracts.hpp"
 #include "market_data.hpp"
+#include "options.hpp"
+#include "engine.hpp"
 
 using namespace std;
 
-namespace BsEngine {
-    void compute_greeks(ContractsBatch& contracts, MarketData& market_data);
-    void eur_call_greeks(ContractsBatch& contracts, MarketData& market_data);
-    void eur_put_greeks(ContractsBatch& contracts, MarketData& market_data);
-}
+// namespace BsEngine {
+//     void compute_greeks(ContractsBatch& contracts, MarketData& market_data);
+//     void eur_call_greeks(ContractsBatch& contracts, MarketData& market_data);
+//     void eur_put_greeks(ContractsBatch& contracts, MarketData& market_data);
+// }
+
+class BsEngine : public IEngine {
+public:
+    void evaluate() override;
+};
 
 #endif

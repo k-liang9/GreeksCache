@@ -58,7 +58,7 @@ namespace BsEngine {
 
         vector<double> taus;
         tm now;
-        get_cur_time(now);
+        now(now);
         time_to_expiry(expiries, now, taus);
         
         for (size_t i = 0; i < num_contracts; i++) {
@@ -122,7 +122,7 @@ namespace BsEngine {
 
         vector<double> taus;
         tm now;
-        get_cur_time(now);
+        now(now);
         time_to_expiry(expiries, now, taus);
         
         for (size_t i = 0; i < num_contracts; i++) {

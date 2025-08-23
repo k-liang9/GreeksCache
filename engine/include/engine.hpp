@@ -7,7 +7,7 @@ using namespace std;
 
 class IEngine {
 public:
-    virtual void evaluate(IExpiryBatch& batch);
+    virtual void evaluate();
 };
 
 #endif

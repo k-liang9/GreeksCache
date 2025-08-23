@@ -5,4 +5,4 @@ add_library(engine
 
 target_include_directories(engine PUBLIC include)
 
-target_link_libraries(engine PUBLIC common state)
+target_link_libraries(engine PUBLIC common)

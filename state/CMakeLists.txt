@@ -6,4 +6,4 @@ add_library(state
 
 target_include_directories(state PUBLIC include)
 
-target_link_libraries(state PUBLIC common registry)
+target_link_libraries(state PUBLIC common registry engine)
