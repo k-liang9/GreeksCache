@@ -20,10 +20,10 @@ namespace BsEngine {
         int num_types = strikes.size();
         for (size_t i = 0; i < num_types; i++) {
             switch (i) {
-                case EUR_CALL:
+                case VAN_CALL:
                     eur_call_greeks(contracts, market_data);
                     break;
-                case EUR_PUT:
+                case VAN_PUT:
                     eur_put_greeks(contracts, market_data);
                     break;
                 default:
@@ -35,15 +35,15 @@ namespace BsEngine {
     void eur_call_greeks(ContractsBatch& contracts, MarketData& market_data) {
         assert(market_data.symbol == contracts.symbol());
 
-        const auto& strikes = contracts.strikes()[EUR_CALL];
-        const auto& expiries = contracts.expiries()[EUR_CALL];
-        auto& prices = contracts.prices_[EUR_CALL];
-        auto& deltas = contracts.deltas_[EUR_CALL];
-        auto& gammas = contracts.gammas_[EUR_CALL];
-        auto& vegas = contracts.vegas_[EUR_CALL];
-        auto& rhos = contracts.rhos_[EUR_CALL];
-        auto& thetas = contracts.thetas_[EUR_CALL];
-        const auto& vols = market_data.vols[EUR_CALL];
+        const auto& strikes = contracts.strikes()[VAN_CALL];
+        const auto& expiries = contracts.expiries()[VAN_CALL];
+        auto& prices = contracts.prices_[VAN_CALL];
+        auto& deltas = contracts.deltas_[VAN_CALL];
+        auto& gammas = contracts.gammas_[VAN_CALL];
+        auto& vegas = contracts.vegas_[VAN_CALL];
+        auto& rhos = contracts.rhos_[VAN_CALL];
+        auto& thetas = contracts.thetas_[VAN_CALL];
+        const auto& vols = market_data.vols[VAN_CALL];
         size_t num_contracts = strikes.size();
 
         assert(expiries.size() == num_contracts);
@@ -99,15 +99,15 @@ namespace BsEngine {
     void eur_put_greeks(ContractsBatch& contracts, MarketData& market_data) {
         assert(market_data.symbol == contracts.symbol());
 
-        const auto& strikes = contracts.strikes()[EUR_PUT];
-        const auto& expiries = contracts.expiries()[EUR_PUT];
-        auto& prices = contracts.prices_[EUR_PUT];
-        auto& deltas = contracts.deltas_[EUR_PUT];
-        auto& gammas = contracts.gammas_[EUR_PUT];
-        auto& vegas = contracts.vegas_[EUR_PUT];
-        auto& rhos = contracts.rhos_[EUR_PUT];
-        auto& thetas = contracts.thetas_[EUR_PUT];
-        const auto& vols = market_data.vols[EUR_PUT];
+        const auto& strikes = contracts.strikes()[VAN_PUT];
+        const auto& expiries = contracts.expiries()[VAN_PUT];
+        auto& prices = contracts.prices_[VAN_PUT];
+        auto& deltas = contracts.deltas_[VAN_PUT];
+        auto& gammas = contracts.gammas_[VAN_PUT];
+        auto& vegas = contracts.vegas_[VAN_PUT];
+        auto& rhos = contracts.rhos_[VAN_PUT];
+        auto& thetas = contracts.thetas_[VAN_PUT];
+        const auto& vols = market_data.vols[VAN_PUT];
         size_t num_contracts = strikes.size();
 
         assert(expiries.size() == num_contracts);
