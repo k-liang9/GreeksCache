@@ -1,7 +1,7 @@
 # Real-Time Greeks Cache -- API Contract (v0.2)
 
 Owner: Kevin Liang  
-Date: Aug 18, 2025  
+Date: Aug 23, 2025  
 Status: Draft  
 Audience: Client developers, backend developers, QA  
 
@@ -22,6 +22,7 @@ HTTP API that serves the latest option greeks from individual contracts from a h
 
 ## 4: Common Types & Conventions
 - symbol: uppercase string (e.g. AAPL)
+- expiry: date only, ISO 8601 format (e.g. 2025-08-17)
 - date: ISO 8601 UTC (e.g. 2025-08-17T11:14:00Z)
 - strike: floating point number
 - type: "C" for call, "P" for put
@@ -74,7 +75,7 @@ GET /price?symbol=SYMBOL%expiry=DATE&strike=K&type=C|P
 ```json
 {
     "symbol": "AAPL",
-    "expiry": "2025-09-19T14:00:00Z",
+    "expiry": "2025-09-19",
     "strike": "150.95",
     "type": "C",
     "snapshot": {
@@ -116,13 +117,13 @@ GET /contracts?symbol=SYMBOL
   "contracts": [
     {
       "symbol": "AAPL",
-      "expiry": "2025-09-19T14:00:00Z",
+      "expiry": "2025-09-19",
       "strike": 150.0,
       "type": "C"
     },
     {
       "symbol": "AAPL",
-      "expiry": "2025-09-19T14:00:00Z",
+      "expiry": "2025-09-19",
       "strike": 155.0,
       "type": "P"
     }
@@ -144,7 +145,7 @@ GET /surface?symbol=SYMBOL&expiry=DATE
 ```json
 {
   "symbol": "AAPL",
-  "expiry": "2025-09-19T14:00:00Z",
+  "expiry": "2025-09-19",
   "surface": [
     {
       "strike": 150.0,
@@ -178,7 +179,7 @@ GET /portfolios/{portfolio_id}
     {
       "position_id": "pos1",
       "symbol": "AAPL",
-      "expiry": "2025-09-19T14:00:00Z",
+      "expiry": "2025-09-19",
       "strike": 150.0,
       "type": "C",
       "units": 10,
@@ -213,7 +214,7 @@ GET /portfolios/{portfolio_id}/positions
     {
       "position_id": "pos1",
       "symbol": "AAPL",
-      "expiry": "2025-09-19T14:00:00Z",
+      "expiry": "2025-09-19",
       "strike": 150.0,
       "type": "C",
       "units": 10,
@@ -238,7 +239,7 @@ Request body:
 ```json
 {
   "symbol": "AAPL",
-  "expiry": "2025-09-19T14:00:00Z",
+  "expiry": "2025-09-19",
   "strike": 150.0,
   "type": "C",
   "units": 10,
