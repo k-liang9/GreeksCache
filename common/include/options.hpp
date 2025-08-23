@@ -23,4 +23,11 @@ enum GreeksIndex {
     NUM_GREEKS
 };
 
+struct Contract {
+    size_t expiry;
+    double strike;
+    string symbol;
+    PayoffType payoff_type;
+}
+
 #endif

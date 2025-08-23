@@ -1,30 +1,17 @@
-#ifndef STATE
-#define STATE
+#ifndef EXPIRY_STATE
+#define EXPIRY_STATE
 
 #include <numbers>
 #include <vector>
 #include "options.hpp"
-#include "cache.hpp"
-#include "engine.hpp"
+
+class IEngine;
 
 using namespace std;
-
-class SymbolState {
-private:
-    const size_t symbol_id;
-    vector<IExpiryBatch*> batches; //1 expiry + 1 engine
-
-public:
-    double spot;
-    size_t spot_as_of_ns;
-    size_t seqno;
-    size_t calibration_version;
-};
 
 class IExpiryBatch {
 protected:
     //id
-    const size_t symbol_id;
     const size_t expiry_id;
     const size_t expiry_ts_ns;
     const EngineType engine_type;
@@ -49,9 +36,14 @@ public:
     vector<double>* theo_read, delta_read, gamma_read, vega_read, rho_read, theta_read;
     vector<double>* theo_write, delta_write, gamma_write, vega_write, rho_write, theta_write; //TODO: assign these at constructor, also use std::swap
     byte epoch_bit;
+
+    IExpiryBatch(size_t expiry_id, EngineType engine_type, vector<double> strikes, vector<PayoffType> payoff_types);
 };
 
-class BSBatch : IExpiryBatch {
+class BSBatch : public IExpiryBatch {
+public:
+    BSBatch(size_t expiry_id, EngineType engine_type, vector<double> strikes, vector<PayoffType> payoff_types);
+
 private:
     vector<double> d1, d2;
     vector<int> vanilla_type_mask;
