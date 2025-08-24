@@ -65,6 +65,10 @@ t_ns parse_time(string_view T) {
     return static_cast<t_ns>(mktime(&exp_time)) * 1000000000ULL;
 }
 
+double ns_to_yrs(t_ns tau) {
+    return static_cast<double>(tau) / (365.25 * 24 * 60 * 60 * 1e9);
+}
+
 const double N(const double x) {
     return 0.5 * std::erfc(-x / std::sqrt(2.0));
 }

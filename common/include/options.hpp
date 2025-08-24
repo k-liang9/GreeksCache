@@ -1,6 +1,8 @@
 #ifndef OPTIONS
 #define OPTIONS
 
+using namespace std;
+
 enum PayoffType {
     VAN_CALL,
     VAN_PUT,
@@ -14,19 +16,10 @@ enum EngineType {
     ENGINETYPE_ERROR
 };
 
-enum GreeksIndex {
-    DELTA,
-    GAMMA,
-    VEGA,
-    RHO,
-    THETA,
-    NUM_GREEKS
-};
-
 struct Contract {
+    string symbol;
     string expiry;
     double strike;
-    string symbol;
     PayoffType payoff_type;
 };
 

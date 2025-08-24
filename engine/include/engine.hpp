@@ -1,13 +1,11 @@
 #ifndef ENGINE
 #define ENGINE
 
-#include "expiry_state.hpp"
-
-using namespace std;
+#include "hot_state_types.hpp"
 
 class IEngine {
 public:
-    virtual void evaluate();
+    virtual void evaluate(MarketSnapshot& snapshot, SliceContext& context, BatchInputs& inputs, KernelScratch& scratch, Greeks& greeks);
 };
 
 #endif

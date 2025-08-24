@@ -4,16 +4,21 @@
 
 using namespace std;
 
-void SymbolState::process_tick(MarketData& market_data) {
-    spot_ = market_data.spot;
-    spot_as_of_ns_ = market_data.ts_ns;
-    vol_ = market_data.vol;
-    div_yield_ = market_data.div_yield;
-    rate_ = market_data.rate;
+SymbolState::SymbolState(size_t symbol_id)
+    : symbol_id_(symbol_id) {}
+
+void SymbolState::process_tick(MarketData& data) {
+    spot_ = data.spot;
+    spot_as_of_ns_ = data.ts_ns;
+    vol_ = data.vol;
+    div_yield_ = data.div_yield;
+    rate_ = data.rate;
     update_seqno();
 
+    MarketSnapshot snapshot = {spot_, vol_, rate_, div_yield_, spot_as_of_ns_, seqno_};
+
     for (auto& batch : batches_) {
-        batch->process_tick(spot_, vol_, rate_, div_yield_);
+        batch->process_tick(snapshot);
     }
 }
 

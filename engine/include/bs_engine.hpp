@@ -2,11 +2,9 @@
 #define BS_ENGINE
 
 #include <vector>
-#include <string_view>
 #include <array>
-#include "market_data.hpp"
-#include "options.hpp"
 #include "engine.hpp"
+#include "hot_state_types.hpp"
 
 using namespace std;
 
@@ -18,7 +16,7 @@ using namespace std;
 
 class BsEngine : public IEngine {
 public:
-    void evaluate() override;
+    void evaluate(MarketSnapshot& snapshot, SliceContext& context, BatchInputs& inputs, KernelScratch& scratch, Greeks& greeks) override;
 };
 
 #endif

@@ -8,6 +8,8 @@
 #include "market_data.hpp"
 #include "expiry_state.hpp"
 #include "types.hpp"
+#include "hot_state_types.hpp"
+#include "symbol_state.hpp"
 
 using namespace std;
 
@@ -24,14 +26,16 @@ private:
     double vol_;
     double rate_;
     double div_yield_;
-
+    
     void update_seqno() { seqno_++; }
 public:
-    SymbolState(size_t symbol_id) : symbol_id_(symbol_id) {}
+    SymbolState(size_t symbol_id);
     void process_tick(MarketData& market_data);
-    void add_expiry_batch(size_t expiry_id, t_ns expiry_ns, EngineType engine_type, 
-                         vector<double> strikes, vector<PayoffType> payoff_types,
-                         vector<pair<size_t, size_t>> ranges);
+    void add_expiry_batch(
+        size_t expiry_id, t_ns expiry_ns, EngineType engine_type, 
+        vector<double> strikes, vector<PayoffType> payoff_types,
+        vector<pair<size_t, size_t>> ranges);
+    const auto& batches() { return batches_; }
 };
 
 #endif

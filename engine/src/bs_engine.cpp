@@ -8,7 +8,6 @@
 #include <cassert>
 #include <experimental/simd>
 #include "utils.hpp"
-#include "testing_vars.hpp"
 #include "bs_engine.hpp"
 
 using namespace std;

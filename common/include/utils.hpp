@@ -15,5 +15,6 @@ inline double phi(const double x) { return n(x); }
 inline double Phi(const double x) { return N(x); }
 t_ns parse_time(std::string_view T);
 t_ns now();
+double ns_to_yrs(t_ns tau);
 
 #endif
