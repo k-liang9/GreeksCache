@@ -11,6 +11,7 @@ namespace test {
         {"AAPL", "2026-10-20", 110.0, VAN_CALL},
         {"AAPL", "2026-11-20", 95.0, VAN_PUT},
         {"AAPL", "2026-12-20", 120.0, VAN_CALL},
+        {"AAPL", "2026-08-20", 104.4, VAN_PUT},
         {"AAPL", "2027-01-20", 90.0, VAN_PUT}
     };
     MarketData market_data = {

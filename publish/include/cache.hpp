@@ -1,8 +1,6 @@
 #ifndef CACHE
 #define CACHE
 
-using namespace std;
-
 class CacheProvider {
 public:
     /*

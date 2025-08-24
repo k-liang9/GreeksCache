@@ -18,7 +18,7 @@ private:
     const size_t symbol_id_;
     vector<unique_ptr<IExpiryBatch>> batches_; //1 expiry + 1 engine
     double spot_;
-    t_ns spot_as_of_ns_;
+    t_ns as_of_ns_;
     size_t seqno_;
 
     //TODO: currently flat values, change to continuous surfaces/curves from market data

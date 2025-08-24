@@ -8,15 +8,24 @@
 
 using namespace std;
 
-// namespace BsEngine {
-//     void compute_greeks(ContractsBatch& contracts, MarketData& market_data);
-//     void eur_call_greeks(ContractsBatch& contracts, MarketData& market_data);
-//     void eur_put_greeks(ContractsBatch& contracts, MarketData& market_data);
-// }
-
 class BsEngine : public IEngine {
+private:
+    MarketSnapshot* snapshot_;
+    SliceContext* context_;
+    BatchInputs* inputs_;
+    KernelScratch* scratch_;
+    Greeks* greeks_;
+
 public:
-    void evaluate(MarketSnapshot& snapshot, SliceContext& context, BatchInputs& inputs, KernelScratch& scratch, Greeks& greeks) override;
+    BsEngine() {}
+
+    void evaluate(
+        MarketSnapshot& snapshot, SliceContext& context, 
+        BatchInputs& inputs, KernelScratch& scratch, Greeks& greeks
+    ) override;
+private:
+
+    void evaluate_vanilla(const pair<size_t, size_t>& vanilla_range);
 };
 
 #endif

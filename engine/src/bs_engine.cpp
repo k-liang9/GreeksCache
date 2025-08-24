@@ -12,150 +12,58 @@
 
 using namespace std;
 
-namespace BsEngine {
-    void compute_greeks(ContractsBatch& contracts, MarketData& market_data) {
-        const auto& strikes = contracts.strikes();
-        const auto& expiries = contracts.expiries();
-        int num_types = strikes.size();
-        for (size_t i = 0; i < num_types; i++) {
-            switch (i) {
-                case VAN_CALL:
-                    eur_call_greeks(contracts, market_data);
-                    break;
-                case VAN_PUT:
-                    eur_put_greeks(contracts, market_data);
-                    break;
-                default:
-                    cout << "invalid option type";
-            }
+void BsEngine::evaluate(MarketSnapshot& snapshot, SliceContext& context, BatchInputs& inputs, KernelScratch& scratch, Greeks& greeks) {
+    snapshot_ = &snapshot;
+    context_ = &context;
+    inputs_ = &inputs;
+    scratch_ = &scratch;
+    greeks_ = &greeks;
+
+    for (auto& range : inputs.ranges) {
+        if (inputs.payoff_types[range.first] == VAN_CALL || inputs.payoff_types[range.first] == VAN_PUT) {
+            evaluate_vanilla(range);
         }
     }
 
-    void eur_call_greeks(ContractsBatch& contracts, MarketData& market_data) {
-        assert(market_data.symbol == contracts.symbol());
+    snapshot_ = nullptr;
+    context_ = nullptr;
+    inputs_ = nullptr;
+    scratch_ = nullptr;
+    greeks_ = nullptr;
+}
 
-        const auto& strikes = contracts.strikes()[VAN_CALL];
-        const auto& expiries = contracts.expiries()[VAN_CALL];
-        auto& prices = contracts.prices_[VAN_CALL];
-        auto& deltas = contracts.deltas_[VAN_CALL];
-        auto& gammas = contracts.gammas_[VAN_CALL];
-        auto& vegas = contracts.vegas_[VAN_CALL];
-        auto& rhos = contracts.rhos_[VAN_CALL];
-        auto& thetas = contracts.thetas_[VAN_CALL];
-        const auto& vols = market_data.vols[VAN_CALL];
-        size_t num_contracts = strikes.size();
+void BsEngine::evaluate_vanilla(const pair<size_t, size_t>& vanilla_range) {
+    double S = snapshot_->spot;
+    double sigma = snapshot_->vol;
+    double r = snapshot_->rate;
+    double q = snapshot_->div_yield;
+    double tau = context_->tau;
+    double sqrt_tau = context_->sqrt_tau;
+    double disc_r = context_->disc_r;
+    double disc_q = context_->disc_q;
+    const vector<int>& mask = inputs_->vanilla_type_mask;
 
-        assert(expiries.size() == num_contracts);
-        assert(vols.size() == num_contracts);
-
-        prices.clear();
-        deltas.clear();
-        gammas.clear();
-        vegas.clear();
-        rhos.clear();
-        thetas.clear();
-
-        vector<double> taus;
-        tm now;
-        now(now);
-        time_to_expiry(expiries, now, taus);
+    for (size_t i = vanilla_range.first; i < vanilla_range.second; i++) {
+        int mask_val = mask[i - vanilla_range.first];
+        double d1 = scratch_->d1[i];
+        double d2 = scratch_->d2[i];
+        double nd1 = n(d1);
+        double nd2 = n(d2);
+        double Nd1 = N(mask_val * d1);
+        double Nd2 = N(mask_val * d2);
+        double K = inputs_->strikes[i];
+        double asset_term = S * disc_q * Nd1;
+        double strike_term = K * disc_r * Nd2;
         
-        for (size_t i = 0; i < num_contracts; i++) {
-            double S = market_data.spot;
-            double K = strikes[i];
-            double tau = taus[i];
-            double sigma = vols[i];
-            double q = market_data.div_yield;
-            double r = market_data.rate;
-            double d1 = 1/(sigma * sqrt(tau)) * (log(S/K) + (r - q + pow(sigma, 2)/2) * tau);
-            double d2 = d1 - sigma * sqrt(tau);
-            double q_disc = exp(- q * tau);
-            double r_disc = exp(- r * tau);
-            double nd1 = n(d1);
-            double nd2 = n(d2);
-            double Nd1 = N(d1);
-            double Nd2 = N(d2);
-            double asset = S * q_disc * Nd1;
-            double strike = K * r_disc * Nd2;
-
-
-            double call_price = asset - strike;
-            double Delta = q_disc * Nd1;
-            double Gamma = q_disc * nd1 / (S * sigma * sqrt(tau));
-            double Vega = S * q_disc * sqrt(tau) * nd1 / 100;
-            double Rho = K * tau * r_disc * Nd2 / 100;
-            double Theta = (- S * q_disc * sigma / (2*sqrt(tau)) * nd1 - r * strike + q * asset) / 365.0;
-
-            prices.push_back(call_price);            
-            deltas.push_back(Delta);       
-            gammas.push_back(Gamma);        
-            vegas.push_back(Vega);        
-            rhos.push_back(Rho);        
-            thetas.push_back(Theta);            
-        }
-    }
-
-    void eur_put_greeks(ContractsBatch& contracts, MarketData& market_data) {
-        assert(market_data.symbol == contracts.symbol());
-
-        const auto& strikes = contracts.strikes()[VAN_PUT];
-        const auto& expiries = contracts.expiries()[VAN_PUT];
-        auto& prices = contracts.prices_[VAN_PUT];
-        auto& deltas = contracts.deltas_[VAN_PUT];
-        auto& gammas = contracts.gammas_[VAN_PUT];
-        auto& vegas = contracts.vegas_[VAN_PUT];
-        auto& rhos = contracts.rhos_[VAN_PUT];
-        auto& thetas = contracts.thetas_[VAN_PUT];
-        const auto& vols = market_data.vols[VAN_PUT];
-        size_t num_contracts = strikes.size();
-
-        assert(expiries.size() == num_contracts);
-        assert(vols.size() == num_contracts);
-
-        prices.clear();
-        deltas.clear();
-        gammas.clear();
-        vegas.clear();
-        rhos.clear();
-        thetas.clear();
-
-        vector<double> taus;
-        tm now;
-        now(now);
-        time_to_expiry(expiries, now, taus);
-        
-        for (size_t i = 0; i < num_contracts; i++) {
-            double S = market_data.spot;
-            double K = strikes[i];
-            double tau = taus[i];
-            double sigma = vols[i];
-            double q = market_data.div_yield;
-            double r = market_data.rate;
-
-            double d1 = 1/(sigma * sqrt(tau)) * (log(S/K) + (r - q + pow(sigma, 2)/2) * tau);
-            double d2 = d1 - sigma * sqrt(tau);
-            double q_disc = exp(- q * tau);
-            double r_disc = exp(- r * tau);
-            double nd1 = n(d1);
-            double nd2 = n(d2);
-            double Nd1 = N(-d1);
-            double Nd2 = N(-d2);
-            double asset = S * q_disc * Nd1;
-            double strike = K * r_disc * Nd2;
-            
-            double put_price = strike - asset;
-            double Delta = -q_disc * Nd1;
-            double Gamma = q_disc * nd1 / (S * sigma * sqrt(tau));
-            double Vega = S * q_disc * sqrt(tau) * nd1 / 100;
-            double Rho = -K * tau * r_disc * Nd2 / 100;
-            double Theta = (-S * q_disc * nd1 * sigma / (2 * sqrt(tau)) + r * strike - q * asset) / 365.0;
-
-            prices.push_back(put_price);            
-            deltas.push_back(Delta);       
-            gammas.push_back(Gamma);        
-            vegas.push_back(Vega);        
-            rhos.push_back(Rho);        
-            thetas.push_back(Theta);      
-        }
-    }
+        greeks_->theo[i] = mask_val * (asset_term - strike_term);
+        greeks_->delta[i] = mask_val * (disc_q * Nd1);
+        greeks_->gamma[i] = disc_q * nd1 / (S * sigma * sqrt_tau);
+        greeks_->vega[i] = S * disc_q * sqrt_tau * nd1 / 100;
+        greeks_->rho[i] = mask_val * K * tau * disc_r * Nd2 / 100;
+        greeks_->theta[i] = (
+            - S * disc_q * sigma / (2*sqrt_tau) * nd1 
+            - r * strike_term * mask_val
+            + q * asset_term * mask_val
+        ) / 365.0;
+    } 
 }

@@ -4,4 +4,4 @@ add_library(publish
 
 target_include_directories(publish PUBLIC include)
 
-target_link_libraries(publish PUBLIC common state engine registry)
+target_link_libraries(publish PUBLIC common)

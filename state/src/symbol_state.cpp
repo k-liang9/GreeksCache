@@ -9,13 +9,13 @@ SymbolState::SymbolState(size_t symbol_id)
 
 void SymbolState::process_tick(MarketData& data) {
     spot_ = data.spot;
-    spot_as_of_ns_ = data.ts_ns;
+    as_of_ns_ = data.ts_ns;
     vol_ = data.vol;
     div_yield_ = data.div_yield;
     rate_ = data.rate;
     update_seqno();
 
-    MarketSnapshot snapshot = {spot_, vol_, rate_, div_yield_, spot_as_of_ns_, seqno_};
+    MarketSnapshot snapshot = {spot_, vol_, rate_, div_yield_, as_of_ns_, seqno_};
 
     for (auto& batch : batches_) {
         batch->process_tick(snapshot);
@@ -29,5 +29,5 @@ void SymbolState::add_expiry_batch(
     vector<double> strikes,
     vector<PayoffType> payoff_types,
     vector<pair<size_t, size_t>> ranges) {
-    batches_.emplace_back(make_unique<BSBatch>(expiry_id, expiry_ns, engine_type, move(strikes), move(payoff_types), move(ranges)));
+    batches_.emplace_back(make_unique<BSBatch>(expiry_id, expiry_ns, engine_type, std::move(strikes), std::move(payoff_types), std::move(ranges)));
 }

@@ -11,6 +11,15 @@
 
 using namespace std;
 
+namespace std {
+    template <>
+    struct hash<pair<size_t, EngineType>> {
+        size_t operator()(const pair<size_t, EngineType>& p) const {
+            return hash<size_t>()(p.first) ^ (hash<int>()(static_cast<int>(p.second)) << 1);
+        }
+    };
+}
+
 void StateOrchestrator::initialize_state(const UniverseRegistry& registry) {
     size_t num_symbols = registry.get_id_to_symbol().size();
     for (size_t sid = 0; sid < num_symbols; sid++) {
@@ -42,7 +51,7 @@ void StateOrchestrator::initialize_state(const UniverseRegistry& registry) {
             switch(engine_type) {
                 case BS_ANALYTIC:
                     symbol_table[sid]->add_expiry_batch(expiry_id, expiry_ns, engine_type, 
-                                                       move(strikes), move(payoff_types), move(ranges));
+                                                       std::move(strikes), std::move(payoff_types), std::move(ranges));
                     break;
                 default:
                     cout << "no valid engine type\n";
@@ -56,8 +65,16 @@ vector<pair<size_t, size_t>> StateOrchestrator::build_expiry_batch(vector<Payoff
     unordered_map<PayoffType, pair<vector<PayoffType>, vector<double>>> payoff_groups;
     for (size_t i = 0; i < payoff_types.size(); i++) {
         PayoffType payoff = payoff_types[i];
-        payoff_groups[payoff].first.push_back(payoff);
-        payoff_groups[payoff].second.push_back(strikes[i]);
+        PayoffType payoff_group;
+        switch (payoff) {
+        case VAN_CALL:
+        case VAN_PUT:
+            payoff_group = VANILLA;
+        default:
+            payoff_group = payoff;
+        }
+        payoff_groups[payoff_group].first.push_back(payoff);
+        payoff_groups[payoff_group].second.push_back(strikes[i]);
     }
     
     payoff_types.clear();
@@ -81,7 +98,7 @@ vector<pair<size_t, size_t>> StateOrchestrator::build_expiry_batch(vector<Payoff
         }
     }
     
-    return move(ranges);
+    return std::move(ranges);
 }
 
 void StateOrchestrator::sink_changes() {

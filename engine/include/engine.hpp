@@ -5,7 +5,12 @@
 
 class IEngine {
 public:
-    virtual void evaluate(MarketSnapshot& snapshot, SliceContext& context, BatchInputs& inputs, KernelScratch& scratch, Greeks& greeks);
+    virtual ~IEngine() = default;
+    
+    virtual void evaluate(
+        MarketSnapshot& snapshot, SliceContext& context, 
+        BatchInputs& inputs, KernelScratch& scratch, Greeks& greeks
+    ) = 0;
 };
 
 #endif

@@ -26,7 +26,6 @@ protected:
     //shared slice
     double tau, sqrt_tau;
     double disc_r, disc_q;
-    t_ns as_of_ns_;
     size_t seqno_;
     size_t num_contracts_;
 
@@ -39,16 +38,20 @@ protected:
     
     unique_ptr<IEngine> engine_;
 
-    virtual KernelScratch prepare_tick(MarketSnapshot& snapshot);
-    virtual BatchInputs compile_batch_inputs();
+    virtual KernelScratch prepare_tick(MarketSnapshot& snapshot) = 0;
+    virtual BatchInputs compile_batch_inputs() = 0;
 
 public:
     IExpiryBatch(size_t expiry_id, t_ns expiry_ns, EngineType engine_type, 
                  vector<double> strikes, vector<PayoffType> payoff_types,
                  vector<pair<size_t, size_t>> ranges);
+    
+    virtual ~IExpiryBatch() = default;
 
     void process_tick(MarketSnapshot& snapshot);
     void swap_buffers();
+    const vector<double>& strikes() { return strikes_; }
+    const vector<PayoffType>& payoff_types() { return payoff_types_; }
     const size_t expiry_id() { return expiry_id_; }
     const t_ns expiry_ts_ns() { return expiry_ts_ns_; }
     const EngineType engine_type() { return engine_type_; }
@@ -62,8 +65,8 @@ public:
             vector<pair<size_t, size_t>> ranges);
 
 private:
-    vector<double> d1, d2;
-    vector<int> vanilla_type_mask;
+    vector<double> d1_, d2_;
+    vector<int> vanilla_type_mask_;
 
 protected:
     KernelScratch prepare_tick(MarketSnapshot& snapshot) override;
