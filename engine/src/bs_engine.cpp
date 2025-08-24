@@ -20,7 +20,7 @@ void BsEngine::evaluate(MarketSnapshot& snapshot, SliceContext& context, BatchIn
     greeks_ = &greeks;
 
     for (auto& range : inputs.ranges) {
-        if (inputs.payoff_types[range.first] == VAN_CALL || inputs.payoff_types[range.first] == VAN_PUT) {
+        if (range.first < inputs.payoff_types.size() && (inputs.payoff_types[range.first] == VAN_CALL || inputs.payoff_types[range.first] == VAN_PUT)) {
             evaluate_vanilla(range);
         }
     }
@@ -44,7 +44,7 @@ void BsEngine::evaluate_vanilla(const pair<size_t, size_t>& vanilla_range) {
     const vector<int>& mask = inputs_->vanilla_type_mask;
 
     for (size_t i = vanilla_range.first; i < vanilla_range.second; i++) {
-        int mask_val = mask[i - vanilla_range.first];
+        int mask_val = mask[i];
         double d1 = scratch_->d1[i];
         double d2 = scratch_->d2[i];
         double nd1 = n(d1);

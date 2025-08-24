@@ -1,4 +1,5 @@
 #include <memory>
+#include <iostream>
 #include "expiry_state.hpp"
 #include "bs_engine.hpp"
 #include "utils.hpp"
@@ -43,7 +44,6 @@ void IExpiryBatch::swap_buffers() {
 }
 
 void IExpiryBatch::process_tick(MarketSnapshot& snapshot) {
-    prepare_tick(snapshot);
     tau = ns_to_yrs(expiry_ts_ns_ - snapshot.as_of_ns);
     sqrt_tau = sqrt(tau);
     disc_r = exp(-snapshot.rate * tau);
@@ -53,6 +53,7 @@ void IExpiryBatch::process_tick(MarketSnapshot& snapshot) {
     SliceContext context = {tau, sqrt_tau, disc_r, disc_q};
     BatchInputs inputs = compile_batch_inputs();
     KernelScratch scratch = prepare_tick(snapshot);
+    
     Greeks greeks = {
         theo_.write(), delta_.write(), gamma_.write(),
         vega_.write(), rho_.write(), theta_.write()};
@@ -63,16 +64,20 @@ void IExpiryBatch::process_tick(MarketSnapshot& snapshot) {
 
 BSBatch::BSBatch(size_t expiry_id, t_ns expiry_ns, EngineType engine_type, vector<double> strikes, vector<PayoffType> payoff_types, vector<pair<size_t, size_t>> ranges) :
 IExpiryBatch(expiry_id, expiry_ns, engine_type, std::move(strikes), std::move(payoff_types), std::move(ranges)) {
-    d1_.resize(num_contracts_);
-    d2_.resize(num_contracts_);
+    fill(d1_.begin(), d1_.end(), 0.0);
+    fill(d2_.begin(), d2_.end(), 0.0);
+    
+    vanilla_type_mask_.resize(num_contracts_);
+    
     for (auto& range : contract_ranges_) {
-        if (payoff_types_[range.first] == VAN_CALL || payoff_types_[range.first] == VAN_PUT) {
-            vanilla_type_mask_.resize(range.second - range.first);
-            for (size_t i = range.first; i < range.second; i++) {
+        if (range.first < payoff_types_.size() && (payoff_types_[range.first] == VAN_CALL || payoff_types_[range.first] == VAN_PUT)) {
+            for (size_t i = range.first; i < range.second && i < payoff_types_.size(); i++) {
                 if (payoff_types_[i] == VAN_CALL) {
-                    vanilla_type_mask_[i-range.first] = 1;
+                    vanilla_type_mask_[i] = 1;
                 } else if (payoff_types_[i] == VAN_PUT) {
-                    vanilla_type_mask_[i-range.first] = -1;
+                    vanilla_type_mask_[i] = -1;
+                } else {
+                    vanilla_type_mask_[i] = 0;
                 }
             }
         }
@@ -80,19 +85,26 @@ IExpiryBatch(expiry_id, expiry_ns, engine_type, std::move(strikes), std::move(pa
 }
 
 KernelScratch BSBatch::prepare_tick(MarketSnapshot& data) {
-    d1_.clear();
-    d2_.clear();
+    // Resize vectors to match the number of strikes
+    size_t num_strikes = strikes_.size();
+    d1_.resize(num_strikes);
+    d2_.resize(num_strikes);
 
     double S = data.spot;
     double sigma = data.vol;
     double r = data.rate;
     double q = data.div_yield;
 
-    for (pair<size_t, size_t>& range : contract_ranges_) {
-        for (size_t i = range.first; i < range.second; i++) {
+    for (const pair<size_t, size_t>& range : contract_ranges_) {
+        for (size_t i = range.first; i < range.second && i < strikes_.size(); i++) {
             double K = strikes_[i];
-            d1_[i] = 1 / (sigma * sqrt_tau) * (log(S/K) + (r - q + pow(sigma, 2)/2) * tau);
-            d2_[i] = d1_[i] - sigma * sqrt_tau;  
+            if (sigma > 0 && sqrt_tau > 0) {
+                d1_[i] = (log(S/K) + (r - q + pow(sigma, 2)/2) * tau) / (sigma * sqrt_tau);
+                d2_[i] = d1_[i] - sigma * sqrt_tau;
+            } else {
+                d1_[i] = 0.0;
+                d2_[i] = 0.0;
+            }
         }
     }
 

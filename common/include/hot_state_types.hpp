@@ -52,7 +52,7 @@ struct KernelScratch {
 };
 
 struct Greeks {
-    vector<double>& theo, delta, gamma, vega, rho, theta;
+    vector<double> &theo, &delta, &gamma, &vega, &rho, &theta;
 };
 
 #endif

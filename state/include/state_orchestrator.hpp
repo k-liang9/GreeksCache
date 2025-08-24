@@ -10,6 +10,7 @@
 #include "registry.hpp"
 #include <memory>
 #include <queue>
+#include "market_data.hpp"
 
 using namespace std;
 
@@ -17,14 +18,16 @@ class SymbolState;
 
 class StateOrchestrator {
 public:
-    StateOrchestrator() {}
+    StateOrchestrator(const UniverseRegistry& registry);
 
-    std::unordered_map<int, unique_ptr<SymbolState>> symbol_table;
-    void initialize_state(const UniverseRegistry& registry);
-    void sink_changes();
+    void initialize_state();
     vector<pair<size_t, size_t>> build_expiry_batch(vector<PayoffType>& payoff_types, vector<double>& strikes);
+    void process_tick(MarketData& market_data);
+    const unordered_map<size_t, unique_ptr<SymbolState>>& symbol_table() const { return symbol_table_; }
 
 private:
+    unordered_map<size_t, unique_ptr<SymbolState>> symbol_table_;
+    const UniverseRegistry& registry_;
     queue<Contract> changes;
 };
 

@@ -20,17 +20,19 @@ namespace std {
     };
 }
 
-void StateOrchestrator::initialize_state(const UniverseRegistry& registry) {
-    size_t num_symbols = registry.get_id_to_symbol().size();
+StateOrchestrator::StateOrchestrator(const UniverseRegistry& registry) : registry_(registry) {}
+
+void StateOrchestrator::initialize_state() {
+    size_t num_symbols = registry_.get_id_to_symbol().size();
     for (size_t sid = 0; sid < num_symbols; sid++) {
-        symbol_table[sid] = make_unique<SymbolState>(sid);
+        symbol_table_[sid] = make_unique<SymbolState>(sid);
         
         using expiry_key = pair<size_t, EngineType>;
         using expiry_value = pair<vector<PayoffType>, vector<double>>;
 
         //batch all contracts under the same symbol into engine + expiry batches
         unordered_map<expiry_key, expiry_value> expiry_batches;
-        for (const ContractKey& contract : registry.get_id_to_contract()[sid]) {
+        for (const ContractKey& contract : registry_.get_id_to_contract()[sid]) {
             EngineType engine_type = UniverseRegistry::engine_of(contract.payoff_type);
             expiry_key key = {contract.expiry_id, engine_type};
             expiry_value& contracts = expiry_batches[key];
@@ -44,13 +46,13 @@ void StateOrchestrator::initialize_state(const UniverseRegistry& registry) {
             EngineType engine_type = it->first.second;
             vector<PayoffType>& payoff_types = it->second.first;
             vector<double>& strikes = it->second.second;
-            t_ns expiry_ns = registry.get_id_to_expiry()[sid][expiry_id];
+            t_ns expiry_ns = registry_.get_id_to_expiry()[sid][expiry_id];
 
             vector<pair<size_t, size_t>> ranges = build_expiry_batch(payoff_types, strikes);
 
             switch(engine_type) {
                 case BS_ANALYTIC:
-                    symbol_table[sid]->add_expiry_batch(expiry_id, expiry_ns, engine_type, 
+                    symbol_table_[sid]->add_expiry_batch(expiry_id, expiry_ns, engine_type, 
                                                        std::move(strikes), std::move(payoff_types), std::move(ranges));
                     break;
                 default:
@@ -101,6 +103,10 @@ vector<pair<size_t, size_t>> StateOrchestrator::build_expiry_batch(vector<Payoff
     return std::move(ranges);
 }
 
-void StateOrchestrator::sink_changes() {
-    //TODO
+void StateOrchestrator::process_tick(MarketData& market_data) {
+    const auto& symbol_to_id = registry_.get_symbol_to_id();
+    if (symbol_to_id.contains(market_data.symbol)) {
+        size_t symbol_id = symbol_to_id.at(market_data.symbol);
+        symbol_table_[symbol_id]->process_tick(market_data);
+    }
 }

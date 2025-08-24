@@ -50,6 +50,13 @@ public:
 
     void process_tick(MarketSnapshot& snapshot);
     void swap_buffers();
+    
+    const vector<double>& theo() const { return theo_.read(); }
+    const vector<double>& delta() const { return delta_.read(); }
+    const vector<double>& gamma() const { return gamma_.read(); }
+    const vector<double>& vega() const { return vega_.read(); }
+    const vector<double>& rho() const { return rho_.read(); }
+    const vector<double>& theta() const { return theta_.read(); }
     const vector<double>& strikes() { return strikes_; }
     const vector<PayoffType>& payoff_types() { return payoff_types_; }
     const size_t expiry_id() { return expiry_id_; }
