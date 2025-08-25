@@ -69,6 +69,26 @@ double ns_to_yrs(t_ns tau) {
     return static_cast<double>(tau) / (365.25 * 24 * 60 * 60 * 1e9);
 }
 
+double ns_to_ms(t_ns tau) {
+    return static_cast<double>(tau) / 1e6;
+}
+
+double ns_to_s(t_ns tau) {
+    return static_cast<double>(tau) / 1e9;
+}
+
+t_ns ms_to_ns(t_ms ms) {
+    return static_cast<t_ns>(ms * 1e6);
+}
+
+t_ns s_to_ns(t_s s) {
+    return static_cast<t_ns>(s * 1e9);
+}
+
+t_ns yrs_to_ns(double yrs) {
+    return static_cast<t_ns>(yrs * 365.25 * 24 * 60 * 60 * 1e9);
+}
+
 const double N(const double x) {
     return 0.5 * std::erfc(-x / std::sqrt(2.0));
 }

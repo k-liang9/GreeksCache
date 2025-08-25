@@ -14,12 +14,10 @@ namespace test {
         {"AAPL", "2026-08-20", 104.4, VAN_PUT},
         {"AAPL", "2027-01-20", 90.0, VAN_PUT}
     };
-    MarketData market_data = {
-        "AAPL",
-        103.0,
-        0.05,
-        0.025,
-        0.2,
-        now()
+    SimInput market_conditions = {
+        parse_time("2025-08-20"), 100, 5,  // start_ts, dt, sim_duration
+        100.0, 0.20, 0.05, 0.03,           // S0, vol (20% annual), rate, div_yield
+        0.05,                              // drift (5% annual)
+        "AAPL"
     };
 }

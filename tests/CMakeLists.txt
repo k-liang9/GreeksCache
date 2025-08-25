@@ -5,7 +5,7 @@ add_executable(tests
 
 target_include_directories(tests PUBLIC include)
 
-target_link_libraries(tests PRIVATE state publish)
+target_link_libraries(tests PRIVATE state publish ingest)
 
 enable_testing()
 add_test(NAME tests COMMAND tests)
