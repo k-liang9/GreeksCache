@@ -4,8 +4,7 @@
 #include <string>
 #include <vector>
 #include <string_view>
-#include "options.hpp"
-#include "market_data.hpp"
+#include "types.hpp"
 
 using namespace std;
 

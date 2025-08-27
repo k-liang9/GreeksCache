@@ -1,7 +1,14 @@
 add_library(publish
-    src/cache.cpp
+    src/redis_publisher.cpp
 )
 
-target_include_directories(publish PUBLIC include)
+find_path(HIREDIS_HEADER hiredis REQUIRED)
+find_path(REDIS_PLUS_PLUS_HEADER sw REQUIRED)
+find_library(HIREDIS_LIB hiredis REQUIRED)
+find_library(REDIS_PLUS_PLUS_LIB redis++ REQUIRED)
 
-target_link_libraries(publish PUBLIC common)
+find_package(Boost REQUIRED)
+
+target_include_directories(publish PUBLIC include ${HIREDIS_HEADER} ${REDIS_PLUS_PLUS_HEADER} ${CMAKE_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+
+target_link_libraries(publish PUBLIC common ${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB})

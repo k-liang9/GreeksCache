@@ -6,7 +6,6 @@
 #include <chrono>
 #include <string>
 #include <unordered_map>
-#include "options.hpp"
 #include "types.hpp"
 
 using namespace std;
@@ -46,9 +45,12 @@ private:
 
     vector<unordered_map<ContractKey, size_t, ContractKeyHash>> contract_to_id;
     vector<vector<ContractKey>> id_to_contract;
+    size_t epoch_;
+
+    void update_epoch() { epoch_++; }
 
 public:
-    UniverseRegistry() {}
+    UniverseRegistry() : epoch_(0) {}
     UniverseRegistry(vector<Contract>& contracts);
 
     void add_contracts(vector<Contract>& contracts);
@@ -60,6 +62,7 @@ public:
     const vector<vector<t_ns>>& get_id_to_expiry() const { return id_to_expiry; }
     const vector<unordered_map<ContractKey, size_t, ContractKeyHash>>& get_contract_to_id() const { return contract_to_id; }
     const vector<vector<ContractKey>>& get_id_to_contract() const { return id_to_contract; }
+    const size_t epoch() { return epoch_; }
 };
 
 #endif

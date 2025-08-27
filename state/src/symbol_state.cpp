@@ -1,6 +1,6 @@
 #include <memory>
 #include "symbol_state.hpp"
-#include "market_data.hpp"
+#include "types.hpp"
 
 using namespace std;
 

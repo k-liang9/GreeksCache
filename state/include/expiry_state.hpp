@@ -5,10 +5,8 @@
 #include <vector>
 #include <array>
 #include <memory>
-#include "options.hpp"
 #include "engine.hpp"
 #include "types.hpp"
-#include "market_data.hpp"
 #include "hot_state_types.hpp"
 
 class IEngine;
@@ -57,6 +55,7 @@ public:
     const vector<double>& vega() const { return vega_.read(); }
     const vector<double>& rho() const { return rho_.read(); }
     const vector<double>& theta() const { return theta_.read(); }
+    const vector<pair<size_t, size_t>>& ranges() const { return contract_ranges_; }
     const vector<double>& strikes() { return strikes_; }
     const vector<PayoffType>& payoff_types() { return payoff_types_; }
     const size_t expiry_id() { return expiry_id_; }

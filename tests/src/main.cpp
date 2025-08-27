@@ -1,25 +1,32 @@
 #include <iostream>
 #include <vector>
 #include <iomanip>
+#include <atomic>
+#include <thread>
+#include <unordered_map>
+#include <iterator>
+#include <sw/redis++/redis++.h>
 #include "bs_engine.hpp"
 #include "testing_vars.hpp"
-#include "options.hpp"
+#include "types.hpp"
 #include "registry.hpp"
 #include "state_orchestrator.hpp"
 #include "utils.hpp"
 #include "gbm_sim.hpp"
 
 using namespace std;
+using namespace sw::redis;
 
-int main() {
-    cout << "=== Greeks Engine Verification Test ===" << endl;
-    cout << endl;
-    
-    UniverseRegistry registry = UniverseRegistry(test::contracts);
-    StateOrchestrator orchestrator = StateOrchestrator(registry);
-    orchestrator.initialize_state();
-    
-    // Print contract details organized by expiry batch
+void redis_test() {
+    auto redis = Redis("tcp://localhost:6379");
+    redis.set("kevin",  "liang");
+    auto val = redis.get("kevin");
+    if (val) {
+        cout << *val << '\n';
+    }
+}
+
+void print_contract_listing(const StateOrchestrator& orchestrator) {
     cout << "=== CONTRACT LISTING ===" << endl;
     cout << "Total Contracts: " << test::contracts.size() << endl << endl;
     
@@ -44,7 +51,41 @@ int main() {
         }
     }
     cout << endl;
+}
+
+void print_greeks_tick(const MarketData& data, const StateOrchestrator& orchestrator) {
+    cout << "=== TICK: " << data.symbol << " Spot=$" << fixed << setprecision(2) << data.spot 
+         << " Time=" << ns_to_s(data.ts_ns) << "s ===" << endl;
     
+    for (const auto& [symbol_id, symbol_state] : orchestrator.symbol_table()) {
+        size_t contract_num = 0;
+        for (auto& batch : symbol_state->batches()) {
+            const auto& strikes = batch->strikes();
+            const auto& payoff_types = batch->payoff_types();
+            const auto& theos = batch->theo();
+            const auto& deltas = batch->delta();
+            const auto& gammas = batch->gamma();
+            const auto& vegas = batch->vega();
+            const auto& rhos = batch->rho();
+            const auto& thetas = batch->theta();
+            
+            for (size_t i = 0; i < strikes.size(); i++) {
+                cout << "  Option " << contract_num++ << ": " 
+                     << "$" << setw(7) << fixed << setprecision(2) << strikes[i] << " " 
+                     << (payoff_types[i] == VAN_CALL ? "CALL" : "PUT ") << endl
+                     << "    Theo=$" << setw(8) << setprecision(4) << theos[i]
+                     << " | Δ=" << setw(8) << setprecision(6) << deltas[i]
+                     << " | Γ=" << setw(8) << setprecision(6) << gammas[i] << endl
+                     << "    Vega=" << setw(8) << setprecision(6) << vegas[i]
+                     << " | ρ=" << setw(8) << setprecision(6) << rhos[i]
+                     << " | Θ=" << setw(8) << setprecision(6) << thetas[i] << endl;
+            }
+        }
+    }
+    cout << endl;
+}
+
+vector<MarketData> generate_simulation_data() {
     GbmSimulator sim;
     sim.input_sim_data(
         test::market_conditions.start_ts,
@@ -59,40 +100,55 @@ int main() {
     );
     vector<MarketData> sim_data;
     sim.generate_sim_data(sim_data);
+    return sim_data;
+}
 
-    for (auto& data : sim_data) {
-        orchestrator.process_tick(data);
+int main() {
+    StateOrchestrator orchestrator = StateOrchestrator();
+    orchestrator.initialize_state(test::contracts);
+    vector<MarketData> sim_data = generate_simulation_data();
+    // print_contract_listing(orchestrator);
 
-        cout << "=== TICK: " << data.symbol << " Spot=$" << fixed << setprecision(2) << data.spot 
-             << " Time=" << ns_to_s(data.ts_ns) << "s ===" << endl;
-        
-        for (const auto& [symbol_id, symbol_state] : orchestrator.symbol_table()) {
-            size_t contract_num = 0;
-            for (auto& batch : symbol_state->batches()) {
-                const auto& strikes = batch->strikes();
-                const auto& payoff_types = batch->payoff_types();
-                const auto& theos = batch->theo();
-                const auto& deltas = batch->delta();
-                const auto& gammas = batch->gamma();
-                const auto& vegas = batch->vega();
-                const auto& rhos = batch->rho();
-                const auto& thetas = batch->theta();
-                
-                for (size_t i = 0; i < strikes.size(); i++) {
-                    cout << "  Option " << contract_num++ << ": " 
-                         << "$" << setw(7) << fixed << setprecision(2) << strikes[i] << " " 
-                         << (payoff_types[i] == VAN_CALL ? "CALL" : "PUT ") << endl
-                         << "    Theo=$" << setw(8) << setprecision(4) << theos[i]
-                         << " | Δ=" << setw(8) << setprecision(6) << deltas[i]
-                         << " | Γ=" << setw(8) << setprecision(6) << gammas[i] << endl
-                         << "    Vega=" << setw(8) << setprecision(6) << vegas[i]
-                         << " | ρ=" << setw(8) << setprecision(6) << rhos[i]
-                         << " | Θ=" << setw(8) << setprecision(6) << thetas[i] << endl;
-                }
-            }
+    atomic<bool> stop{false};
+
+    thread compute_core([&]{
+        for (auto& data : sim_data) {
+            orchestrator.process_tick(data);
+            // print_greeks_tick(data, orchestrator);
+            this_thread::sleep_for(chrono::milliseconds(100));
         }
-        cout << endl;
-    }
+        stop.store(true);
+    });
+
+    thread publisher([&]{
+        while (!stop.load()) {
+            orchestrator.redis_publisher().run();
+        }
+    });
+
+    thread reader([&]{
+        auto redis = Redis("tcp://localhost:6379");
+        while (!stop.load()) {
+            try {
+                unordered_map<string, string> result;
+                redis.hgetall("greeks:AAPL:2026-08-20:100.0000:VAN_CALL", inserter(result, result.begin()));
+                if (!result.empty()) {
+                    cout << "=== REDIS HGETALL RESULT ===" << endl;
+                    for (const auto& pair : result) {
+                        cout << pair.first << ": " << pair.second << endl;
+                    }
+                    cout << endl;
+                }
+            } catch (const exception& e) {
+                // Redis connection might not be ready yet, continue silently
+            }
+            this_thread::sleep_for(chrono::milliseconds(200));
+        }
+    });
+    
+    compute_core.join();
+    publisher.join();
+    reader.join();
 
     return 0;
 }

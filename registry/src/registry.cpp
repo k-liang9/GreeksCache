@@ -4,12 +4,12 @@
 #include <unordered_map>
 #include "registry.hpp"
 #include "utils.hpp"
-#include "options.hpp"
 
 using namespace std;
 
 UniverseRegistry::UniverseRegistry(vector<Contract>& contracts) {
     add_contracts(contracts);
+    epoch_ = 0;
 }
 
 void UniverseRegistry::add_contracts(vector<Contract>& contracts) {

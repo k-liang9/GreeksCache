@@ -324,11 +324,19 @@ POST /portfolios/{portfolio_id}/revalue
 
 ## 6: Redis Key Schema
 
-- `(symbol:expiry:strike:type:time)` →  
-  `{ as_of, spot, vol, rate, div_yield, theo_price, delta, gamma, vega, rho, theta, source, calibration_version, seqno, stale }`
+### Current Greeks (Latest Data)
+- `greeks:symbol:expiry:strike:type` →  
+  `{ as_of, spot, vol, rate, div_yield, theo_price, delta, gamma, vega, rho, theta, calibration_version, seqno }`
+  
+  Example: `greeks:AAPL:2025-09-19:150.95:C`
 
-- `(portfolio:{id}:positions)` →  
+### Historical Greeks (Optional - for analytics)
+- `greeks_hist:symbol:expiry:strike:type:timestamp` →  
+  Same structure as current Greeks, for historical analysis
+
+### Portfolio Data
+- `portfolio:id:positions` →  
   Set of `position_id`s
 
-- `(portfolio:{id}:position:{position_id})` →  
+- `portfolio:(id):position:(position_id)` →  
   `{ symbol, expiry, strike, type, units, avg_entry_price, open_ts, last_update_ts }`

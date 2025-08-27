@@ -1,3 +1,6 @@
+#include "types.hpp"
+#include <iomanip>
+#include <sstream>
 #include "utils.hpp"
 #include <string_view>
 #include <vector>
@@ -12,6 +15,25 @@ t_ns now() {
             chrono::system_clock::now().time_since_epoch()
         ).count()
     );
+}
+
+string ns_to_date(t_ns ns) {
+    std::time_t t = static_cast<std::time_t>(ns / 1000000000ULL);
+    std::tm tm = *std::gmtime(&t);
+    char buf[11];
+    std::strftime(buf, sizeof(buf), "%Y-%m-%d", &tm);
+    return std::string(buf);
+}
+
+std::string ns_to_iso8601(t_ns ns) {
+    std::time_t t = static_cast<std::time_t>(ns / 1000000000ULL);
+    std::tm tm = *std::gmtime(&t);
+        int ms = static_cast<int>((ns / 1000000ULL) % 1000ULL);
+        char buf[30];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", &tm);
+        char out[40];
+        snprintf(out, sizeof(out), "%s.%03dZ", buf, ms);
+        return std::string(out);
 }
 
 t_ns parse_time(string_view T) {
@@ -95,4 +117,12 @@ const double N(const double x) {
 
 const double n(const double x) {
     return 1/sqrt(2 * M_PI) * exp(- pow(x, 2) / 2);
+}
+
+const string payoff_type_to_string(PayoffType type) {
+    switch (type) {
+        case VAN_CALL: return "VAN_CALL";
+        case VAN_PUT:  return "VAN_PUT";
+        default:       return "UNKNOWN";
+    }
 }

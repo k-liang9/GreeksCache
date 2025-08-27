@@ -20,9 +20,14 @@ namespace std {
     };
 }
 
-StateOrchestrator::StateOrchestrator(const UniverseRegistry& registry) : registry_(registry) {}
+StateOrchestrator::StateOrchestrator() :
+    registry_(UniverseRegistry()),
+    redis_publisher_(RedisPublisher("localhost", 6379))
+{}
 
-void StateOrchestrator::initialize_state() {
+void StateOrchestrator::initialize_state(vector<Contract>& contracts) {
+    registry_.add_contracts(contracts);
+
     size_t num_symbols = registry_.get_id_to_symbol().size();
     for (size_t sid = 0; sid < num_symbols; sid++) {
         symbol_table_[sid] = make_unique<SymbolState>(sid);
@@ -52,8 +57,10 @@ void StateOrchestrator::initialize_state() {
 
             switch(engine_type) {
                 case BS_ANALYTIC:
-                    symbol_table_[sid]->add_expiry_batch(expiry_id, expiry_ns, engine_type, 
-                                                       std::move(strikes), std::move(payoff_types), std::move(ranges));
+                    symbol_table_[sid]->add_expiry_batch(
+                        expiry_id, expiry_ns, engine_type, 
+                        std::move(strikes), std::move(payoff_types), std::move(ranges)
+                    );
                     break;
                 default:
                     cout << "no valid engine type\n";
@@ -107,6 +114,33 @@ void StateOrchestrator::process_tick(MarketData& market_data) {
     const auto& symbol_to_id = registry_.get_symbol_to_id();
     if (symbol_to_id.contains(market_data.symbol)) {
         size_t symbol_id = symbol_to_id.at(market_data.symbol);
-        symbol_table_[symbol_id]->process_tick(market_data);
+        auto& symbol_state = symbol_table_[symbol_id];
+        symbol_state->process_tick(market_data);
+
+        build_and_publish_jobs(symbol_state, market_data);
     }
 }
+
+void StateOrchestrator::build_and_publish_jobs(unique_ptr<SymbolState>& symbol_state, MarketData& market_data) {
+    size_t seqno = symbol_state->seqno();
+    size_t calibration_version = symbol_state->calibration_version();
+
+    for (auto& batch : symbol_state->batches()) {
+        PublishJob job {
+            registry_.get_id_to_symbol().at(symbol_state->symbol_id()),
+            market_data.ts_ns,
+            market_data.spot, market_data.vol, market_data.rate, market_data.div_yield,
+            calibration_version, seqno,
+            batch->expiry_ts_ns(),
+            batch->engine_type(),
+            &batch->strikes(),
+            &batch->payoff_types(),
+            &batch->ranges(),
+            batch->theo(), batch->delta(), batch->gamma(), batch->vega(), batch->rho(), batch->theta()
+        };
+
+        redis_publisher_.enqueue_job(std::move(job));
+    }
+}
+
+void StateOrchestrator::add_contracts(vector<Contract>& contracts) {}

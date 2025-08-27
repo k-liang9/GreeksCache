@@ -3,7 +3,6 @@
 
 #include <string>
 #include "utils.hpp"
-#include "market_data.hpp"
 #include "types.hpp"
 
 using namespace std;

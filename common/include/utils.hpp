@@ -1,3 +1,4 @@
+#include "types.hpp"
 #ifndef UTILS
 #define UTILS
 #include <string>
@@ -21,5 +22,8 @@ double ns_to_s(t_ns tau);
 t_ns ms_to_ns(t_ms ms);
 t_ns s_to_ns(t_s s);
 t_ns yrs_to_ns(double yrs);
+string ns_to_date(t_ns ns);
+const string payoff_type_to_string(PayoffType type);
+std::string ns_to_iso8601(t_ns ns);
 
 #endif

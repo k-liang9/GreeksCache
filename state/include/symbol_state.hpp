@@ -4,8 +4,6 @@
 #include <numbers>
 #include <vector>
 #include <memory>
-#include "options.hpp"
-#include "market_data.hpp"
 #include "expiry_state.hpp"
 #include "types.hpp"
 #include "hot_state_types.hpp"
@@ -35,7 +33,12 @@ public:
         size_t expiry_id, t_ns expiry_ns, EngineType engine_type, 
         vector<double> strikes, vector<PayoffType> payoff_types,
         vector<pair<size_t, size_t>> ranges);
+
     const auto& batches() { return batches_; }
+    const size_t symbol_id() { return symbol_id_; }
+    const t_ns as_of_ns() { return as_of_ns_; }
+    const size_t seqno() { return seqno_; }
+    const size_t calibration_version() { return calibration_version_; }
 };
 
 #endif
