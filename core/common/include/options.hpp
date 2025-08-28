@@ -1,6 +1,8 @@
 #ifndef OPTIONS
 #define OPTIONS
 
+#include <string>
+
 using namespace std;
 
 enum PayoffType {

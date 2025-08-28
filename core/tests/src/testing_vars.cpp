@@ -16,8 +16,8 @@ namespace test {
     };
     SimInput market_conditions = {
         parse_time("2026-08-10"), 10,  // start_ts, dt,
-        100.0, 60.00, 0.05, 0.03,           // S0, vol, rate, div_yield
-        800.00,                              // drift
+        100.0, 0.20, 0.05, 0.03,           // S0, vol, rate, div_yield
+        0.80,                              // drift
         "AAPL"
     };
 }
