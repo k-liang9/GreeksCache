@@ -33,9 +33,9 @@ struct Contract {
 struct MarketData {
     string symbol;
     double spot;
+    double vol;
     double rate;
     double div_yield;
-    double vol;
     t_ns ts_ns;
 };
 

@@ -87,7 +87,7 @@ void RedisPublisher::publish_batch(const PublishJob& job) {
                 + strike_buf + ":"
                 + payoff_type_to_string(job.payoff_types->at(i))
             );
-            cout << "redis key: " << key << '\n';;
+            // cout << "redis key: " << key << '\n';
             greeks_hset_["theo_price"]              = to_string(job.theo.at(i));
             greeks_hset_["delta"]                   = to_string(job.delta.at(i));
             greeks_hset_["gamma"]                   = to_string(job.gamma.at(i));

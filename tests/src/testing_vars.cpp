@@ -15,9 +15,9 @@ namespace test {
         {"AAPL", "2027-01-20", 90.0, VAN_PUT}
     };
     SimInput market_conditions = {
-        parse_time("2025-08-20"), 100, 5,  // start_ts, dt, sim_duration
-        100.0, 0.20, 0.05, 0.03,           // S0, vol (20% annual), rate, div_yield
-        0.05,                              // drift (5% annual)
+        parse_time("2026-08-10"), 10,  // start_ts, dt,
+        100.0, 60.00, 0.05, 0.03,           // S0, vol, rate, div_yield
+        800.00,                              // drift
         "AAPL"
     };
 }

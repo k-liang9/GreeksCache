@@ -5,6 +5,7 @@
 #include <thread>
 #include <unordered_map>
 #include <iterator>
+#include <boost/lockfree/spsc_queue.hpp>
 #include <sw/redis++/redis++.h>
 #include "bs_engine.hpp"
 #include "testing_vars.hpp"
@@ -85,12 +86,12 @@ void print_greeks_tick(const MarketData& data, const StateOrchestrator& orchestr
     cout << endl;
 }
 
-vector<MarketData> generate_simulation_data() {
-    GbmSimulator sim;
-    sim.input_sim_data(
+int main() {
+    StateOrchestrator orchestrator = StateOrchestrator();
+    orchestrator.initialize_state(test::contracts);
+    GbmSimulator sim = GbmSimulator(
         test::market_conditions.start_ts,
         test::market_conditions.dt,
-        test::market_conditions.sim_duration,
         test::market_conditions.S0,
         test::market_conditions.vol,
         test::market_conditions.rate,
@@ -98,26 +99,27 @@ vector<MarketData> generate_simulation_data() {
         test::market_conditions.drift,
         test::market_conditions.symbol
     );
-    vector<MarketData> sim_data;
-    sim.generate_sim_data(sim_data);
-    return sim_data;
-}
-
-int main() {
-    StateOrchestrator orchestrator = StateOrchestrator();
-    orchestrator.initialize_state(test::contracts);
-    vector<MarketData> sim_data = generate_simulation_data();
     // print_contract_listing(orchestrator);
+    boost::lockfree::spsc_queue<MarketData> market_data_stream{128};
 
     atomic<bool> stop{false};
 
-    thread compute_core([&]{
-        for (auto& data : sim_data) {
-            orchestrator.process_tick(data);
-            // print_greeks_tick(data, orchestrator);
-            this_thread::sleep_for(chrono::milliseconds(100));
+    thread market_sim([&]{
+        while (!stop.load()) {
+            sim.run(market_data_stream);
         }
-        stop.store(true);
+    });
+
+    thread compute_core([&]{
+        MarketData data;
+        while (!stop.load()) {
+            if (market_data_stream.pop(data)) {
+                orchestrator.process_tick(data);
+                // print_greeks_tick(data, orchestrator);
+            } else {
+                this_thread::sleep_for(chrono::milliseconds(5));
+            }
+        }
     });
 
     thread publisher([&]{
@@ -134,6 +136,7 @@ int main() {
                 redis.hgetall("greeks:AAPL:2026-08-20:100.0000:VAN_CALL", inserter(result, result.begin()));
                 if (!result.empty()) {
                     cout << "=== REDIS HGETALL RESULT ===" << endl;
+                    cout << "key: greeks:AAPL:2026-08-20:100.0000:VAN_CALL\n";
                     for (const auto& pair : result) {
                         cout << pair.first << ": " << pair.second << endl;
                     }
@@ -142,10 +145,12 @@ int main() {
             } catch (const exception& e) {
                 // Redis connection might not be ready yet, continue silently
             }
-            this_thread::sleep_for(chrono::milliseconds(200));
+            this_thread::sleep_for(chrono::seconds(2));
         }
     });
     
+    this_thread::sleep_for(chrono::seconds(20));
+    stop.store(true);
     compute_core.join();
     publisher.join();
     reader.join();

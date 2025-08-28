@@ -57,8 +57,13 @@ void BsEngine::evaluate_vanilla(const pair<size_t, size_t>& vanilla_range) {
         
         greeks_->theo[i] = mask_val * (asset_term - strike_term);
         greeks_->delta[i] = mask_val * (disc_q * Nd1);
-        greeks_->gamma[i] = disc_q * nd1 / (S * sigma * sqrt_tau);
-        greeks_->vega[i] = S * disc_q * sqrt_tau * nd1 / 100;
+        if (S <= 0.0 || sigma <= 0.0 || sqrt_tau <= 0.0) {
+            greeks_->gamma[i] = 0.0;
+            greeks_->vega[i] = 0.0;
+        } else {
+            greeks_->gamma[i] = disc_q * nd1 / (S * sigma * sqrt_tau);
+            greeks_->vega[i] = S * disc_q * sqrt_tau * nd1 / 100;
+        }
         greeks_->rho[i] = mask_val * K * tau * disc_r * Nd2 / 100;
         greeks_->theta[i] = (
             - S * disc_q * sigma / (2*sqrt_tau) * nd1 

@@ -2,37 +2,35 @@
 #define GBM_SIM
 
 #include <string>
+#include <random>
+#include <boost/lockfree/spsc_queue.hpp>
 #include "utils.hpp"
 #include "types.hpp"
 
 using namespace std;
 
-void generate_bm_path(vector<pair<t_ns, double>>& path, t_ns start, t_ms dt, t_s sim_duration);
-
-
 class GbmSimulator {
 private:
-    t_ns start_ts_;
-    t_ms dt_;
-    t_s sim_duration_;
-    double S0_;
-    double vol_ms_;
-    double rate_;
-    double div_yield_;
-    double drift_ms_;
-    string symbol_;
-    
-    void generate_gbm_path(vector<pair<t_ns, double>>& path);
-public:
-    GbmSimulator() {};
+    const t_ns start_ts_;
+    const t_ms dt_;
+    const double S0_;
+    const double vol_ms_;
+    const double vol_;
+    const double rate_;
+    const double div_yield_;
+    const double drift_ms_;
+    const string symbol_;
+    normal_distribution<double> dist_;
 
-    void generate_sim_data(vector<MarketData>& sim_data);
-    void input_sim_data(
-        t_ns start, t_ms dt, t_s sim_duration,
+    double W_t_;
+    t_ms t_ms_;
+    
+public:
+    GbmSimulator(t_ns start, t_ms dt,
         double S0, double vol_annual, double rate, double div_yield,
         double drift_annual,
-        string symbol
-    );
+        string symbol);
+    void run(boost::lockfree::spsc_queue<MarketData>& market_data_queue);
 };
 
 #endif
