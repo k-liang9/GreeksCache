@@ -151,6 +151,7 @@ int main() {
     
     this_thread::sleep_for(chrono::seconds(20));
     stop.store(true);
+    market_sim.join();
     compute_core.join();
     publisher.join();
     reader.join();

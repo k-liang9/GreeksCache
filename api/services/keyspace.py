@@ -1,0 +1,1 @@
+# pure functions that read Redis (single contract, surface, indices)

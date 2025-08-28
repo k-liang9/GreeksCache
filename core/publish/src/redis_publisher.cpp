@@ -50,7 +50,8 @@ void RedisPublisher::run() {
             publish_batch(cur_job);
         }
     } else {
-        this_thread::sleep_for(chrono::milliseconds(10));     }
+        this_thread::sleep_for(chrono::milliseconds(10));
+    }
 }
 
 void RedisPublisher::publish_batch(const PublishJob& job) {

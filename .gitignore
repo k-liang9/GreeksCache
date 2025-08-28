@@ -1,3 +1,5 @@
 /build
 /.vscode
 .env
+.python-version
+api/__pycache__/
