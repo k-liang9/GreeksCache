@@ -5,6 +5,7 @@ import time
 import asyncio
 from utils import *
 from services.redis_pool import create_redis_pool, close_redis_pool
+from errors import register_exception_handlers
 
 from routes.health import router as health_router
 
@@ -36,8 +37,10 @@ async def redis_heartbeat(app, redis, interval=2):
             }
         await asyncio.sleep(interval)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    register_exception_handlers(app)
     app.state.redis = await create_redis_pool()
     app.state.heartbeat_task = asyncio.create_task(redis_heartbeat(app, app.state.redis))
     # - db connection pool

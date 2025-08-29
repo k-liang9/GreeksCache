@@ -1,7 +1,8 @@
 import asyncio
 import time
 from fastapi import APIRouter, Request
-from utils import now_iso8601
+from utils import *
+from errors import AppError
 
 router = APIRouter()
 
@@ -30,7 +31,7 @@ async def get_redis_health(request: Request):
             "ok": True,
             "rtt_ms": rtt_ms
         }
-    except TimeoutError:
-        return {"ok": False, "error": "redis_timeout"}
+    except asyncio.TimeoutError:
+        raise AppError(504, "TIMEOUT", "redis ping timeout", {"service": "redis"})
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        raise AppError(503, "SERVICE_UNAVAILABLE", "redis ping failed", {'service': 'redis', 'error': short(e)})

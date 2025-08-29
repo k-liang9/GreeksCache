@@ -1,7 +1,7 @@
 # Real-Time Greeks Cache -- API Contract (v0.2)
 
 Owner: Kevin Liang  
-Date: Aug 23, 2025  
+Date: Aug 29, 2025  
 Status: Draft  
 Audience: Client developers, backend developers, QA  
 
@@ -13,7 +13,7 @@ HTTP API that serves the latest option greeks from individual contracts from a h
 - Staleness: responses include a `stale` flag when last update age > `STALE_TTL_SEC`    
 
 ## 2: Versioning & Base URL
-- Base URL (dev): http://localhost:6969/api/v0
+- Base URL (dev): http://localhost:8000/
 - Semantic version: v0 and localhost while iterating, promote to v1 when stable
 - Change policy: Additive fields are ok
 
@@ -33,14 +33,43 @@ HTTP API that serves the latest option greeks from individual contracts from a h
 ### 5.0 Error
 Returns a standard error object for failed requests.
 
-Codes: INVALID_ARGUMENT, NOT_FOUND, STALE_DATA, INTERNAL, SERVICE_UNAVAILABLE
+Common HTTP status mappings:
+- 400 Bad Request — INVALID_ARGUMENT
+- 404 Not Found — NOT_FOUND
+- 409 Conflict — STALE_DATA
+- 500 Internal Server Error — INTERNAL
+- 503 Service Unavailable — SERVICE_UNAVAILABLE
+- 504 Timeout - TIMOUT
+
+Example error payload (JSON):
 ```json
 {
-    "error": {
-        "code": "INVALID_ARGUMENT",
-        "message": "strike must be positive",
-        "details": {"field": "strike"}
-    }
+  "error": {
+    "code": "INVALID_ARGUMENT",
+    "message": "strike must be positive",
+    "details": {"field": "strike"}
+  }
+}
+```
+
+Meta block
+- `meta.trace_id` (string): correlation id for requests (generated if not provided). Use this id when opening support tickets.
+- `meta.path` (string): the request path that caused the error.
+- `meta.ts` (string): ISO8601 timestamp when the error was produced.
+
+Example payload with `meta`:
+```json
+{
+  "error": {
+    "code": "INVALID_ARGUMENT",
+    "message": "strike must be positive",
+    "details": {"field": "strike"}
+  },
+  "meta": {
+    "trace_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "path": "/price",
+    "ts": "2025-08-29T13:01:03Z"
+  }
 }
 ```
 
