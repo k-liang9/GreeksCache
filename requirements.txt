@@ -1,5 +1,2 @@
-fastapi
-redis
-
-
 fastapi[standard]
+redis[hiredis]

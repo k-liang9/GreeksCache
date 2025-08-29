@@ -47,22 +47,42 @@ Codes: INVALID_ARGUMENT, NOT_FOUND, STALE_DATA, INTERNAL, SERVICE_UNAVAILABLE
 ---
 
 ### 5.1 Health
-Checks API and cache health status.
+Checks API and service health status. Returns service name, redis heartbeat status, and last update timestamp.
 
 GET /health
 
-200 OK
+200
 ```json
 {
-    "status": "ok",
-    "redis": "ok",
-    "last_update_ts": "2025-08-16T13:45:00Z"
+  "status": "ok",
+  "service": "greeks-read-api",
+  "redis": {
+    "ok": true,
+    "last_ok_ts": "2025-08-16T13:45:00Z",
+    "rtt_ms": 25,
+    "last_error": ""
+  },
+  "last_update_ts": "2025-08-16T13:45:00Z"
 }
 ```
-4XX
-- INVALID_ARGUMENT if symbol format invalid
-5xx
-- SERVICE_UNAVAILABLE if cache or database is unreachable
+400: INVALID_ARGUMENT if symbol format invalid
+500: SERVICE_UNAVAILABLE if cache or database is unreachable
+
+---
+
+### 5.1.1 Redis Readiness
+Checks if Redis is reachable and responsive. Returns RTT and status.
+
+GET /health/ready
+
+200
+```json
+{
+  "ok": true,
+  "rtt_ms": 2.1
+}
+```
+500: Redis not reachable or timeout
 
 ---
 
@@ -101,8 +121,8 @@ GET /price?symbol=SYMBOL%expiry=DATE&strike=K&type=C|P
 }
 ```
 
-4xx: INVALID_ARGUMENT, NOT_FOUND    
-5xx: SERVICE_UNAVAILABLE, INTERNAL
+400: INVALID_ARGUMENT, NOT_FOUND    
+500: SERVICE_UNAVAILABLE, INTERNAL
 
 ---
 
@@ -131,8 +151,8 @@ GET /contracts?symbol=SYMBOL
   ]
 }
 ```
-4xx: INVALID_ARGUMENT  
-5xx: INTERNAL
+400: INVALID_ARGUMENT  
+500: INTERNAL
 
 ---
 
@@ -161,8 +181,8 @@ GET /surface?symbol=SYMBOL&expiry=DATE
   ]
 }
 ```
-4xx: INVALID_ARGUMENT, NOT_FOUND  
-5xx: INTERNAL
+400: INVALID_ARGUMENT, NOT_FOUND  
+500: INTERNAL
 
 ---
 
@@ -197,8 +217,8 @@ GET /portfolios/{portfolio_id}
   "stale": false
 }
 ```
-4xx: INVALID_ARGUMENT, NOT_FOUND  
-5xx: INTERNAL
+400: INVALID_ARGUMENT, NOT_FOUND    
+500: INTERNAL
 
 ---
 
@@ -225,8 +245,8 @@ GET /portfolios/{portfolio_id}/positions
   "stale": false
 }
 ```
-4xx: INVALID_ARGUMENT, NOT_FOUND  
-5xx: INTERNAL
+400: INVALID_ARGUMENT, NOT_FOUND    
+500: INTERNAL
 
 ---
 
@@ -253,8 +273,8 @@ Request body:
   "status": "added"
 }
 ```
-4xx: INVALID_ARGUMENT, NOT_FOUND  
-5xx: INTERNAL
+400: INVALID_ARGUMENT, NOT_FOUND    
+500: INTERNAL
 
 ---
 
@@ -277,8 +297,8 @@ Request body:
   "status": "updated"
 }
 ```
-4xx: INVALID_ARGUMENT, NOT_FOUND  
-5xx: INTERNAL
+400: INVALID_ARGUMENT, NOT_FOUND    
+500: INTERNAL
 
 ---
 
@@ -294,8 +314,8 @@ DELETE /portfolios/{portfolio_id}
   "status": "deleted"
 }
 ```
-4xx: INVALID_ARGUMENT, NOT_FOUND  
-5xx: INTERNAL
+400: INVALID_ARGUMENT, NOT_FOUND    
+500: INTERNAL
 
 ---
 
@@ -319,8 +339,8 @@ POST /portfolios/{portfolio_id}/revalue
   "stale": false
 }
 ```
-4xx: INVALID_ARGUMENT, NOT_FOUND  
-5xx: INTERNAL
+400: INVALID_ARGUMENT, NOT_FOUND    
+500: INTERNAL
 
 ## 6: Redis Key Schema
 

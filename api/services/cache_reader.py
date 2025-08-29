@@ -1,1 +1,1 @@
-# create one async pooled client on startup; close on shutdown
+# key builders & strike formatting (single source of truth)
