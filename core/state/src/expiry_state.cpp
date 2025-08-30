@@ -44,13 +44,13 @@ void IExpiryBatch::swap_buffers() {
 }
 
 void IExpiryBatch::process_tick(MarketSnapshot& snapshot) {
-    tau = ns_to_yrs(expiry_ts_ns_ - snapshot.as_of_ns);
-    sqrt_tau = sqrt(tau);
-    disc_r = exp(-snapshot.rate * tau);
-    disc_q = exp(-snapshot.div_yield * tau);
+    tau_ = ns_to_yrs(expiry_ts_ns_ - snapshot.as_of_ns);
+    sqrt_tau = sqrt(tau_);
+    disc_r = exp(-snapshot.rate * tau_);
+    disc_q = exp(-snapshot.div_yield * tau_);
     seqno_ = snapshot.seqno;
 
-    SliceContext context = {tau, sqrt_tau, disc_r, disc_q};
+    SliceContext context = {tau_, sqrt_tau, disc_r, disc_q};
     BatchInputs inputs = compile_batch_inputs();
     KernelScratch scratch = prepare_tick(snapshot);
     
@@ -99,7 +99,7 @@ KernelScratch BSBatch::prepare_tick(MarketSnapshot& data) {
         for (size_t i = range.first; i < range.second && i < strikes_.size(); i++) {
             double K = strikes_[i];
             if (sigma > 0 && sqrt_tau > 0) {
-                d1_[i] = (log(S/K) + (r - q + pow(sigma, 2)/2) * tau) / (sigma * sqrt_tau);
+                d1_[i] = (log(S/K) + (r - q + pow(sigma, 2)/2) * tau_) / (sigma * sqrt_tau);
                 d2_[i] = d1_[i] - sigma * sqrt_tau;
             } else {
                 d1_[i] = 0.0;

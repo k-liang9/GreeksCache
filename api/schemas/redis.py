@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 class RedisContract(BaseModel):
-    as_of: int
+    as_of: str
     spot: float
     vol: float
     rate: float
@@ -14,4 +14,4 @@ class RedisContract(BaseModel):
     theta: float
     calibration_version: int
     seqno: int
-    #TODO: add time_to_expiry_yrs
+    time_to_expiry_yrs: float

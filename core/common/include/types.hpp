@@ -45,6 +45,7 @@ struct PublishJob {
     double spot, vol, rate, div_yield;
     size_t calibration_version, seqno;
     t_ns expiry;
+    double tau;
     EngineType engine_type;
     const vector<double>* strikes;
     const vector<PayoffType>* payoff_types;

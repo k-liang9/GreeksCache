@@ -1,7 +1,7 @@
 # Real-Time Greeks Cache -- API Contract (v0.2)
 
 Owner: Kevin Liang  
-Date: Aug 29, 2025  
+Date: Aug 30, 2025  
 Status: Draft  
 Audience: Client developers, backend developers, QA  
 
@@ -217,18 +217,16 @@ GET /surface?symbol=SYMBOL&expiry=DATE
 
 ---
 
-### 5.5 Portfolio Summary
-Fetches all positions and summary greeks for a portfolio.
+### 5.5 Summary
+Fetches all positions and summary greeks.
 
-GET /portfolios/{portfolio_id}
+GET /summary
 
 200 OK  
 ```json
 {
-  "portfolio_id": "abc123",
   "positions": [
     {
-      "position_id": "pos1",
       "symbol": "AAPL",
       "expiry": "2025-09-19",
       "strike": 150.0,
@@ -253,17 +251,16 @@ GET /portfolios/{portfolio_id}
 
 ---
 
-### 5.6 List Portfolio Positions
-Lists all positions in a portfolio.
+### 5.6 Positions
+Lists all positions that match a contract.
 
-GET /portfolios/{portfolio_id}/positions
+GET /positions?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
 
 200 OK  
 ```json
 {
   "positions": [
     {
-      "position_id": "pos1",
       "symbol": "AAPL",
       "expiry": "2025-09-19",
       "strike": 150.0,
@@ -281,10 +278,10 @@ GET /portfolios/{portfolio_id}/positions
 
 ---
 
-### 5.7 Add Portfolio Position
-Adds a new position to a portfolio.
+### 5.7 Add Position
+Adds a new position The API currently does not track portfolios; the position will be recorded globally and can later be associated with a position_id when that feature is added.
 
-POST /portfolios/{portfolio_id}/positions
+POST /positions
 
 Request body:
 ```json
@@ -294,13 +291,12 @@ Request body:
   "strike": 150.0,
   "type": "C",
   "units": 10,
-  "price": 12.34 // optional
+  "price": 12.34 //optional
 }
 ```
 200 OK  
 ```json
 {
-  "position_id": "pos1",
   "status": "added"
 }
 ```
@@ -309,10 +305,10 @@ Request body:
 
 ---
 
-### 5.8 Adjust Portfolio Position
-Adjusts the units of an existing portfolio position.
+### 5.8 Adjust Portfolio Positions
+Adjusts units for positions that match a contract.
 
-PATCH /portfolios/{portfolio_id}/positions/{position_id}
+PATCH /positions?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
 
 Request body:
 ```json
@@ -323,8 +319,7 @@ Request body:
 200 OK  
 ```json
 {
-  "position_id": "pos1",
-  "units": 5,
+  "updated": 1,
   "status": "updated"
 }
 ```
@@ -333,15 +328,15 @@ Request body:
 
 ---
 
-### 5.9 Delete Portfolio
-Deletes a portfolio and all its positions.
+### 5.9 Close Positions
+Closes positions that match a contract across all portfolios.
 
-DELETE /portfolios/{portfolio_id}
+DELETE /positions?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
 
 200 OK  
 ```json
 {
-  "portfolio_id": "abc123",
+  "deleted": 3,
   "status": "deleted"
 }
 ```
@@ -350,15 +345,14 @@ DELETE /portfolios/{portfolio_id}
 
 ---
 
-### 5.10 Revalue Portfolio
-Recomputes and returns summary greeks for a portfolio.
+### 5.10 Revalue Positions
+Recomputes and returns aggregated summary greeks for positions that match a contract across all portfolios.
 
-POST /portfolios/{portfolio_id}/revalue
+POST /positions/revalue?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
 
 200 OK  
 ```json
 {
-  "portfolio_id": "abc123",
   "summary_greeks": {
     "delta": 1.23,
     "gamma": 0.045,

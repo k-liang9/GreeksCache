@@ -22,7 +22,7 @@ protected:
     const EngineType engine_type_;
 
     //shared slice
-    double tau, sqrt_tau;
+    double tau_, sqrt_tau;
     double disc_r, disc_q;
     size_t seqno_;
     size_t num_contracts_;
@@ -62,6 +62,7 @@ public:
     const t_ns expiry_ts_ns() { return expiry_ts_ns_; }
     const EngineType engine_type() { return engine_type_; }
     const unique_ptr<IEngine>& engine() { return engine_; }
+    const double tau() { return tau_; }
 };
 
 class BSBatch : public IExpiryBatch {

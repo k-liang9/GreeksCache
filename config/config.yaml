@@ -1,0 +1,11 @@
+redis:
+  host: "localhost"
+  port: 6379
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+
+cache_ttl: 60
+debug: false
+model_version: "bs-v0"

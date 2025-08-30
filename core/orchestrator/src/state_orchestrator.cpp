@@ -132,6 +132,7 @@ void StateOrchestrator::build_and_publish_jobs(unique_ptr<SymbolState>& symbol_s
             market_data.spot, market_data.vol, market_data.rate, market_data.div_yield,
             calibration_version, seqno,
             batch->expiry_ts_ns(),
+            batch->tau(),
             batch->engine_type(),
             &batch->strikes(),
             &batch->payoff_types(),

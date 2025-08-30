@@ -29,6 +29,7 @@ RedisPublisher::RedisPublisher(string_view host, size_t port)
         {"vol"                  , ""},
         {"rate"                 , ""},
         {"div_yield"            , ""},
+        {"time_to_expiry_yrs"   , ""},
         {"theo_price"           , ""},
         {"delta"                , ""},
         {"gamma"                , ""},
@@ -70,6 +71,7 @@ void RedisPublisher::publish_batch(const PublishJob& job) {
     greeks_hset_["vol"]                     = to_string(job.vol);
     greeks_hset_["rate"]                    = to_string(job.rate);
     greeks_hset_["div_yield"]               = to_string(job.div_yield);
+    greeks_hset_["time_to_expiry_yrs"]      = to_string(job.tau);
     greeks_hset_["calibration_version"]     = to_string(job.calibration_version);
     greeks_hset_["seqno"]                   = to_string(job.seqno);
 

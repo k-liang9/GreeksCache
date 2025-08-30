@@ -32,6 +32,7 @@ def parse_contract(contract_list: List[Tuple[str, RedisContract]]) -> SingleCont
     greeks = Greeks(**greeks_dict)
     contract_snapshot_dict = {
         "as_of": r_contract.as_of,
+        "time_to_expiry_yrs": r_contract.time_to_expiry_yrs,
         "stale": False,
         "market": market,
         "greeks": greeks

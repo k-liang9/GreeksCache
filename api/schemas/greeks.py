@@ -17,6 +17,7 @@ class Market(BaseModel):
     
 class ContractSnapshot(BaseModel):
     as_of: str
+    time_to_expiry_yrs: float
     stale: bool
     market: Market
     greeks: Greeks
