@@ -4,12 +4,14 @@
 #include <memory>
 #include <iostream>
 #include <numeric>
+#include <boost/lockfree/spsc_queue.hpp>
 #include "state_orchestrator.hpp"
 #include "registry.hpp"
 #include "expiry_state.hpp"
 #include "symbol_state.hpp"
 
 using namespace std;
+using namespace boost::lockfree;
 
 namespace std {
     template <>
@@ -22,7 +24,9 @@ namespace std {
 
 StateOrchestrator::StateOrchestrator() :
     registry_(UniverseRegistry()),
-    redis_publisher_(RedisPublisher("localhost", 6379))
+    redis_publisher_(RedisPublisher("localhost", 6379)),
+    opened_contracts_(1024),
+    closed_contracts_(1024)
 {}
 
 void StateOrchestrator::initialize_state(vector<Contract>& contracts) {
@@ -144,4 +148,13 @@ void StateOrchestrator::build_and_publish_jobs(unique_ptr<SymbolState>& symbol_s
     }
 }
 
-void StateOrchestrator::add_contracts(vector<Contract>& contracts) {}
+void StateOrchestrator::sink_contract_changes(bool add, vector<Contract>& contracts) {
+    spsc_queue<Contract>& q = add ? opened_contracts_ : closed_contracts_;
+    for (Contract& contract : contracts) {
+        q.push(std::move(contract));
+    }
+}
+
+void StateOrchestrator::flush_contract_changes() {
+    registry_.flush_changes(opened_contracts_, closed_contracts_);
+}

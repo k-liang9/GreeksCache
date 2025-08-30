@@ -89,31 +89,43 @@ void print_greeks_tick(const MarketData& data, const StateOrchestrator& orchestr
 int main() {
     StateOrchestrator orchestrator = StateOrchestrator();
     orchestrator.initialize_state(test::contracts);
-    GbmSimulator sim = GbmSimulator(
-        test::market_conditions.start_ts,
-        test::market_conditions.dt,
-        test::market_conditions.S0,
-        test::market_conditions.vol,
-        test::market_conditions.rate,
-        test::market_conditions.div_yield,
-        test::market_conditions.drift,
-        test::market_conditions.symbol
+    GbmSimulator apple_sim = GbmSimulator(
+        test::apple_market_conditions.start_ts,
+        test::apple_market_conditions.dt,
+        test::apple_market_conditions.S0,
+        test::apple_market_conditions.vol,
+        test::apple_market_conditions.rate,
+        test::apple_market_conditions.div_yield,
+        test::apple_market_conditions.drift,
+        test::apple_market_conditions.symbol
+    );
+    GbmSimulator google_sim = GbmSimulator(
+        test::google_market_conditions.start_ts,
+        test::google_market_conditions.dt,
+        test::google_market_conditions.S0,
+        test::google_market_conditions.vol,
+        test::google_market_conditions.rate,
+        test::google_market_conditions.div_yield,
+        test::google_market_conditions.drift,
+        test::google_market_conditions.symbol
     );
     // print_contract_listing(orchestrator);
-    boost::lockfree::spsc_queue<MarketData> market_data_stream{128};
+    boost::lockfree::spsc_queue<MarketData> apple_market_data_stream{128};
+    boost::lockfree::spsc_queue<MarketData> google_market_data_stream{128};
 
     atomic<bool> stop{false};
 
     thread market_sim([&]{
         while (!stop.load()) {
-            sim.run(market_data_stream);
+            apple_sim.run(apple_market_data_stream);
+            google_sim.run(google_market_data_stream);
         }
     });
 
     thread compute_core([&]{
         MarketData data;
         while (!stop.load()) {
-            if (market_data_stream.pop(data)) {
+            if (apple_market_data_stream.pop(data) || google_market_data_stream.pop(data)) {
                 orchestrator.process_tick(data);
                 // print_greeks_tick(data, orchestrator);
             } else {
@@ -136,7 +148,7 @@ int main() {
                 redis.hgetall("greeks:AAPL:2026-08-20:100.0000:VAN_CALL", inserter(result, result.begin()));
                 if (!result.empty()) {
                     cout << "=== REDIS HGETALL RESULT ===" << endl;
-                    cout << "key: greeks:AAPL:2026-08-20:100.0000:VAN_CALL\n";
+                    cout << "key: greeks:GOOGL:2026-08-21:251.0000:VAN_PUT\n";
                     for (const auto& pair : result) {
                         cout << pair.first << ": " << pair.second << endl;
                     }

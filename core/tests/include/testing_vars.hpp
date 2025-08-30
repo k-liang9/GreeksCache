@@ -18,7 +18,8 @@ namespace test {
     };
 
     extern vector<Contract> contracts;
-    extern SimInput market_conditions;
+    extern SimInput apple_market_conditions;
+    extern SimInput google_market_conditions;
 }
 
 #endif
