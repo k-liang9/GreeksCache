@@ -1,6 +1,6 @@
 # create one async pooled client on startup; close on shutdown
 import redis.asyncio as redis
-
+from logger import logger
 
 async def create_redis_pool():
     pool = redis.ConnectionPool(
@@ -12,5 +12,13 @@ async def create_redis_pool():
     return r
 
 async def close_redis_pool(r):
-    await r.close()
-    await r.wait_closed()
+    try:
+        await r.close()
+    except Exception:
+        pass
+
+    try:
+        await r.wait_closed()
+    except Exception:
+        pass
+    logger.info("shut down redis")

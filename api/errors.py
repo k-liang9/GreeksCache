@@ -3,6 +3,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi import status
 import uuid
+from logger import logger
 
 class AppError(Exception):
     def __init__(self, http_status: int, code: str, message: str, details: dict | None = None):
@@ -41,10 +42,7 @@ def format_error_payload(exc: AppError | Exception, request: Request, trace_id: 
 
 async def error_handler(request: Request, exc: AppError | Exception):
     status_code, payload = format_error_payload(exc, request)
-    if isinstance(exc, AppError):
-        pass
-    else:
-        pass
+    logger.error(payload["error"]["message"])
     return JSONResponse(status_code=status_code, content=payload)
 
 def register_exception_handlers(app):

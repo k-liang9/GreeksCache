@@ -6,10 +6,15 @@ import asyncio
 from utils import *
 from services.redis_pool import create_redis_pool, close_redis_pool
 from errors import register_exception_handlers
+from logger import logger
 
 from routes.health import router as health_router
+from routes.contracts import router as contracts_router
+from routes.greeks import router as greeks_router
+from routes.surface import router as surface_router
 
 async def redis_heartbeat(app, redis, interval=2):
+    logger.info("created redis heartbeat task")
     while True:
         try:
             await asyncio.wait_for(redis.ping(), timeout=0.5)
@@ -40,13 +45,13 @@ async def redis_heartbeat(app, redis, interval=2):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    register_exception_handlers(app)
     app.state.redis = await create_redis_pool()
+    logger.info("created redis pool")
     app.state.heartbeat_task = asyncio.create_task(redis_heartbeat(app, app.state.redis))
     # - db connection pool
     # - initialize metrics/observability
     # - set service metadata
-    # - optional warmup (ping redis, preload config)
+    # - optional warmup (preload config)
     yield
     app.state.heartbeat_task.cancel()
     try:
@@ -60,6 +65,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(health_router)
+app.include_router(contracts_router)
+app.include_router(greeks_router)
+app.include_router(surface_router)
+register_exception_handlers(app)
 
 @app.get("/")
 async def read_root():

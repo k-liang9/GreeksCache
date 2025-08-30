@@ -2,4 +2,4 @@
 /.vscode
 .env
 .python-version
-api/__pycache__/
+**/__pycache__/

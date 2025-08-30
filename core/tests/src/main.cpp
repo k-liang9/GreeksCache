@@ -149,7 +149,9 @@ int main() {
         }
     });
     
-    this_thread::sleep_for(chrono::seconds(20));
+    while (true) {
+        this_thread::sleep_for(chrono::milliseconds(5));
+    }
     stop.store(true);
     market_sim.join();
     compute_core.join();

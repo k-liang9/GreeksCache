@@ -111,32 +111,34 @@ GET /health/ready
   "rtt_ms": 2.1
 }
 ```
-500: Redis not reachable or timeout
+503: Redis not reachable
+504: Redis timeout
 
 ---
 
 ### 5.2 greeks (single contract)
 Fetches greeks for a single European option contract.
 
-GET /price?symbol=SYMBOL%expiry=DATE&strike=K&type=C|P
+GET /greeks?symbol=SYMBOL%expiry=DATE&strike=K&type=C|P
 
 200 OK  
 ```json
 {
-    "symbol": "AAPL",
-    "expiry": "2025-09-19",
-    "strike": "150.95",
-    "type": "C",
+    "contract": {
+        "symbol": "AAPL",
+        "expiry": "2025-09-19",
+        "strike": "150.95",
+        "type": "C"
+    },
     "snapshot": {
         "as_of": "2025-08-17T13:45:01Z",
+        "time_to_expiry_yrs": 0.84,
         "stale": false,
         "inputs": {
             "spot": 196.42,
             "vol": 0.24,
             "rate": 0.03,
             "div_yield": 0.00,
-            "time_to_expiry_yrs": 0.84,
-            "source": "sim"
         }, 
         "outputs": {
             "theo_price": 12.3456,
@@ -163,7 +165,7 @@ GET /contracts?symbol=SYMBOL
 200 OK  
 ```json
 {
-  "contracts": [
+  [
     {
       "symbol": "AAPL",
       "expiry": "2025-09-19",
