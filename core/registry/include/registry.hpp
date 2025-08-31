@@ -12,6 +12,7 @@
 #include "types.hpp"
 
 #define GRACE_PERIOD_NS s_to_ns(30)
+#define STRIKE_SCALE 10000
 
 using namespace std;
 using namespace boost::lockfree;
@@ -24,23 +25,23 @@ enum MissingLevel {
 };
 
 struct ContractKey {
-    double strike;
+    int strike_scaled;
     PayoffType payoff_type;
     
     bool operator==(const ContractKey& other) const {
-        return strike == other.strike && 
+        return strike_scaled == other.strike_scaled && 
                payoff_type == other.payoff_type;
     }
     
     bool operator<(const ContractKey& other) const {
-        if (strike != other.strike) return strike < other.strike;
+        if (strike_scaled != other.strike_scaled) return strike_scaled < other.strike_scaled;
         return payoff_type < other.payoff_type;
     }
 };
 
 struct ContractKeyHash {
     size_t operator()(const ContractKey& key) const {
-        return std::hash<double>()(key.strike) ^
+        return std::hash<double>()(key.strike_scaled) ^
                (std::hash<int>()(static_cast<int>(key.payoff_type)) << 1);
     }
 };

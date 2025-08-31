@@ -18,6 +18,7 @@ namespace test {
     };
 
     extern string test_expiry;
+    extern vector<Contract> user_changes;
     extern vector<Contract> contracts;
     extern SimInput apple_market_conditions;
     extern SimInput google_market_conditions;

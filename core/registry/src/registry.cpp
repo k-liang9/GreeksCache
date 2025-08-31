@@ -65,9 +65,11 @@ void UniverseRegistry::flush_user_changes(spsc_queue<Contract>& open, spsc_queue
     while (open.pop(contract)) {
         MissingLevel missing = missing_level_of(contract);
         if (missing == EXISTS) {
+            cout << "contract exists\n";
             continue;
         }
         if (missing <= SYMBOL) {
+            cout << "symbol not tracked\n";
             track_new_symbol(contract.symbol);
         }
 
@@ -75,14 +77,18 @@ void UniverseRegistry::flush_user_changes(spsc_queue<Contract>& open, spsc_queue
         t_ns expiry_ns = parse_time(contract.expiry);
 
         if (missing <= EXPIRY) {
+            cout << "expiry doesn't exist\n";
             add_new_expiry(symbol_id, expiry_ns);
         }
 
         size_t expiry_id = expiry_to_id_[symbol_id][expiry_ns];
 
         if (missing <= CONTRACT) {
+            cout << "contract terms doesn't exist\n";
             add_new_contract(symbol_id, expiry_id, contract.strike, contract.payoff_type);
         }
+
+        cout << "contract added\n";
     }
     //remove contracts of closed positions
     while (close.pop(contract)) {
@@ -102,7 +108,7 @@ MissingLevel UniverseRegistry::missing_level_of(Contract& contract) {
         return EXPIRY;
     }
     size_t expiry_id = expiry_to_id_[symbol_id][expiry];
-    ContractKey key = {contract.strike, contract.payoff_type};
+    ContractKey key = {(int)(contract.strike * STRIKE_SCALE), contract.payoff_type};
     if (!contract_to_id_[symbol_id][expiry_id].contains(key)) {
         return CONTRACT;
     } else {
@@ -136,7 +142,7 @@ void UniverseRegistry::add_new_expiry(size_t symbol_id, t_ns expiry_ns) {
 }
 
 void UniverseRegistry::add_new_contract(size_t symbol_id, size_t expiry_id, float strike, PayoffType payoff_type) {
-    ContractKey contract_key = {strike, payoff_type};
+    ContractKey contract_key = {(int)(strike * STRIKE_SCALE), payoff_type};
     id_to_contract_[symbol_id][expiry_id].push_back(contract_key);
     contract_to_id_[symbol_id][expiry_id][contract_key] = id_to_contract_[symbol_id].size() - 1;
 }

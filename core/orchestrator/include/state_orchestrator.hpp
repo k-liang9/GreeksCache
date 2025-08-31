@@ -1,8 +1,7 @@
 #ifndef STATE_ORCHESTRATOR
 #define STATE_ORCHESTRATOR
 
-#define BATCH_HEADROOM 0.2;
-
+#include <cstdint>
 #include <vector>
 #include <unordered_map>
 #include <functional>
@@ -12,6 +11,8 @@
 #include "registry.hpp"
 #include "redis_publisher.hpp"
 #include "types.hpp"
+
+constexpr float BATCH_HEADROOM = 0.2;
 
 using namespace std;
 using namespace boost::lockfree;

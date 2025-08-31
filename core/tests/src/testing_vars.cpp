@@ -20,6 +20,9 @@ namespace test {
         {"GOOGL", ns_to_iso8601_ny(now_ns + s_to_ns(86400), false), 251, VAN_PUT},
         {"GOOGL", ns_to_iso8601_ny(now_ns + s_to_ns(15), true), 50, VAN_CALL}
     };
+    vector<Contract> user_changes = {
+        {"GOOGL", ns_to_iso8601_ny(now_ns + s_to_ns(10*86400), false), 250.4, VAN_CALL}
+    };
     SimInput apple_market_conditions = {
         now_ns, 10,  // start_ts, dt,
         100.0, 0.20, 0.05, 0.03,           // S0, vol, rate, div_yield

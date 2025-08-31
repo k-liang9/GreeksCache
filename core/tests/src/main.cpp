@@ -87,9 +87,6 @@ void print_greeks_tick(const MarketData& data, const StateOrchestrator& orchestr
 }
 
 int main() {
-    string test_time = ns_to_iso8601_ny(now() + s_to_ns(86400), true);
-    cout << test_time << '\n';
-    cout << parse_time(test_time) << '\n';
     StateOrchestrator orchestrator = StateOrchestrator();
     orchestrator.initialize_state(test::contracts);
     GbmSimulator apple_sim = GbmSimulator(
@@ -139,8 +136,8 @@ int main() {
 
     thread updater([&]{
         while (!stop.load()) {
-            this_thread::sleep_for(chrono::seconds(5));
             orchestrator.flush_changes();
+            this_thread::sleep_for(chrono::seconds(5));
         }
     });
 
@@ -170,6 +167,13 @@ int main() {
             this_thread::sleep_for(chrono::seconds(2));
         }
     });
+
+    thread user_changes([&]{
+        while (!stop.load()) {
+            this_thread::sleep_for(chrono::seconds(3));
+            orchestrator.sink_contract_changes(true, test::user_changes);
+        }
+    });
     
     while (true) {
         this_thread::sleep_for(chrono::milliseconds(5));
@@ -180,6 +184,7 @@ int main() {
     publisher.join();
     reader.join();
     updater.join();
+    user_changes.join();
 
     return 0;
 }

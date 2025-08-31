@@ -46,7 +46,7 @@ void StateOrchestrator::initialize_state(vector<Contract>& contracts) {
                 EngineType engine_type = UniverseRegistry::engine_of(contract.payoff_type);
                 expiry_value& contracts = engine_batches[engine_type];
                 contracts.first.push_back(contract.payoff_type);
-                contracts.second.push_back(contract.strike);
+                contracts.second.push_back(contract.strike_scaled * 1.0 / STRIKE_SCALE);
             }
 
             //sort the batches by payoff type and create ExpiryBatch
