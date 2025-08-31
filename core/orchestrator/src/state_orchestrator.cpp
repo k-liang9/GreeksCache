@@ -155,6 +155,6 @@ void StateOrchestrator::sink_contract_changes(bool add, vector<Contract>& contra
     }
 }
 
-void StateOrchestrator::flush_contract_changes() {
-    registry_.flush_changes(opened_contracts_, closed_contracts_);
+void StateOrchestrator::flush_changes() {
+    registry_.update_registry(opened_contracts_, closed_contracts_);
 }

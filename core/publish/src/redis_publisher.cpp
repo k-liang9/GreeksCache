@@ -66,7 +66,7 @@ void RedisPublisher::publish_batch(const PublishJob& job) {
     assert(job.rho.size() == len);
     assert(job.theta.size() == len);
 
-    greeks_hset_["as_of"]                   = ns_to_iso8601(job.as_of_ns);
+    greeks_hset_["as_of"]                   = ns_to_iso8601_ny(job.as_of_ns, true);
     greeks_hset_["spot"]                    = to_string(job.spot);
     greeks_hset_["vol"]                     = to_string(job.vol);
     greeks_hset_["rate"]                    = to_string(job.rate);
@@ -86,7 +86,7 @@ void RedisPublisher::publish_batch(const PublishJob& job) {
             string key = (
                 "greeks:"
                 + job.symbol + ":"
-                + ns_to_date(job.expiry) + ":"
+                + ns_to_iso8601_ny(job.expiry, false) + ":"
                 + strike_buf + ":"
                 + payoff_type_to_string(job.payoff_types->at(i))
             );

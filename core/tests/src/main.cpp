@@ -87,6 +87,9 @@ void print_greeks_tick(const MarketData& data, const StateOrchestrator& orchestr
 }
 
 int main() {
+    string test_time = ns_to_iso8601_ny(now() + s_to_ns(86400), true);
+    cout << test_time << '\n';
+    cout << parse_time(test_time) << '\n';
     StateOrchestrator orchestrator = StateOrchestrator();
     orchestrator.initialize_state(test::contracts);
     GbmSimulator apple_sim = GbmSimulator(
@@ -134,6 +137,13 @@ int main() {
         }
     });
 
+    thread updater([&]{
+        while (!stop.load()) {
+            this_thread::sleep_for(chrono::seconds(5));
+            orchestrator.flush_changes();
+        }
+    });
+
     thread publisher([&]{
         while (!stop.load()) {
             orchestrator.redis_publisher().run();
@@ -145,10 +155,10 @@ int main() {
         while (!stop.load()) {
             try {
                 unordered_map<string, string> result;
-                redis.hgetall("greeks:AAPL:2026-08-20:100.0000:VAN_CALL", inserter(result, result.begin()));
+                redis.hgetall("greeks:GOOGL:" + test::test_expiry + ":251.0000:VAN_PUT", inserter(result, result.begin()));
                 if (!result.empty()) {
                     cout << "=== REDIS HGETALL RESULT ===" << endl;
-                    cout << "key: greeks:GOOGL:2026-08-21:251.0000:VAN_PUT\n";
+                    cout << "key: greeks:GOOGL:" + test::test_expiry + ":251.0000:VAN_PUT\n";
                     for (const auto& pair : result) {
                         cout << pair.first << ": " << pair.second << endl;
                     }
@@ -169,6 +179,7 @@ int main() {
     compute_core.join();
     publisher.join();
     reader.join();
+    updater.join();
 
     return 0;
 }

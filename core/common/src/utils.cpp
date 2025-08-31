@@ -1,11 +1,13 @@
 #include "types.hpp"
-#include <iomanip>
-#include <sstream>
-#include "utils.hpp"
-#include <string_view>
-#include <vector>
-#include <chrono>
 #include <cmath>
+#include <cstdlib>
+#include <mutex>
+#include <ctime>
+#include <string>
+#include <stdexcept>
+#include <chrono>
+#include <string_view>
+#include <cstdio>
 
 using namespace std;
 
@@ -17,74 +19,215 @@ t_ns now() {
     );
 }
 
-string ns_to_date(t_ns ns) {
+std::string ns_to_iso8601_ny(t_ns ns, bool show_time) {
+    // Thread safety: use a mutex to protect TZ manipulation
+    static std::mutex tz_mutex;
+    std::lock_guard<std::mutex> lock(tz_mutex);
+    
     std::time_t t = static_cast<std::time_t>(ns / 1000000000ULL);
-    std::tm tm = *std::gmtime(&t);
-    char buf[11];
-    std::strftime(buf, sizeof(buf), "%Y-%m-%d", &tm);
-    return std::string(buf);
+    int ms = static_cast<int>((ns / 1000000ULL) % 1000ULL);
+
+    // Save original TZ environment variable
+    const char* old_tz = getenv("TZ");
+    std::string old_tz_val;
+    bool had_tz = (old_tz != nullptr);
+    if (had_tz) {
+        old_tz_val = old_tz;
+    }
+
+    // Set to New York timezone
+    if (setenv("TZ", "America/New_York", 1) != 0) {
+        // Handle error - fallback to original TZ
+        if (had_tz) {
+            setenv("TZ", old_tz_val.c_str(), 1);
+        } else {
+            unsetenv("TZ");
+        }
+        tzset();
+        // Could throw exception or return error indicator here
+        // For now, continue with whatever timezone we have
+    }
+    tzset();
+
+    std::tm tm_buf;
+    if (localtime_r(&t, &tm_buf) == nullptr) {
+        // Handle error in time conversion
+        // Restore TZ and return empty or error string
+        if (had_tz) {
+            setenv("TZ", old_tz_val.c_str(), 1);
+        } else {
+            unsetenv("TZ");
+        }
+        tzset();
+        return ""; // or throw exception
+    }
+
+    // Restore original TZ environment variable
+    if (had_tz) {
+        setenv("TZ", old_tz_val.c_str(), 1);
+    } else {
+        unsetenv("TZ");
+    }
+    tzset();
+
+    // Format the output
+    if (show_time) {
+        char time_buf[32];
+        if (std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%S", &tm_buf) == 0) {
+            return ""; // strftime failed
+        }
+        
+        char result[48];
+        if (snprintf(result, sizeof(result), "%s.%03d", time_buf, ms) < 0) {
+            return ""; // snprintf failed
+        }
+        return std::string(result);
+    } else {
+        char date_buf[16];
+        if (std::strftime(date_buf, sizeof(date_buf), "%Y-%m-%d", &tm_buf) == 0) {
+            return ""; // strftime failed
+        }
+        return std::string(date_buf);
+    }
 }
 
-std::string ns_to_iso8601(t_ns ns) {
-    std::time_t t = static_cast<std::time_t>(ns / 1000000000ULL);
-    std::tm tm = *std::gmtime(&t);
-        int ms = static_cast<int>((ns / 1000000ULL) % 1000ULL);
-        char buf[30];
-        std::strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", &tm);
-        char out[40];
-        snprintf(out, sizeof(out), "%s.%03dZ", buf, ms);
-        return std::string(out);
-}
-
-t_ns parse_time(string_view T) {
+t_ns parse_time(std::string_view T) {
+    // Thread safety: use a mutex to protect TZ manipulation
+    static std::mutex tz_mutex;
+    std::lock_guard<std::mutex> lock(tz_mutex);
+    
+    if (T.length() < 10) {
+        throw std::invalid_argument("Invalid date format - too short");
+    }
+    
     tm exp_time = {};
-
+    
     auto to_int = [&](size_t pos, size_t len) -> int {
+        if (pos + len > T.length()) {
+            throw std::invalid_argument("Invalid date format - insufficient length");
+        }
         int v = 0;
         for (size_t i = 0; i < len; ++i) {
             char c = T[pos + i];
+            if (c < '0' || c > '9') {
+                throw std::invalid_argument("Invalid date format - non-digit character");
+            }
             v = v * 10 + (c - '0');
         }
         return v;
     };
 
-    // Handle both formats: YYYY-MM-DDTHH:MM:SS and YYYY-MM-DDTHH:MM:SSZ
-    bool is_utc = T.back() == 'Z';
-    size_t time_len = is_utc ? T.length() - 1 : T.length();
-    
-    // Parse basic components (same for both formats)
-    int year  = to_int(0, 4);
-    int month = to_int(5, 2);   // 1-12
-    int day   = to_int(8, 2);   // 1-31
-    
-    // Check if we have time component, default to market close (16:00:00 ET)
-    int hour = 16, min = 0, sec = 0;  // Default to 4 PM market close
-    if (time_len >= 19) {  // YYYY-MM-DDTHH:MM:SS
-        hour = to_int(11, 2);  // 0-23
-        min  = to_int(14, 2);  // 0-59
-        sec  = to_int(17, 2);  // 0-60
+    // Check basic format requirements
+    if (T[4] != '-' || T[7] != '-') {
+        throw std::invalid_argument("Invalid date format - missing dashes");
     }
 
+    // Parse date part
+    int year = to_int(0, 4);
+    int month = to_int(5, 2);
+    int day = to_int(8, 2);
+    
+    // Validate date values
+    if (year < 1900 || year > 3000) {
+        throw std::invalid_argument("Invalid year");
+    }
+    if (month < 1 || month > 12) {
+        throw std::invalid_argument("Invalid month");
+    }
+    if (day < 1 || day > 31) {
+        throw std::invalid_argument("Invalid day");
+    }
+
+    // Default time to 4 PM (market close)
+    int hour = 16, min = 0, sec = 0;
+    int nanoseconds = 0;
+    
+    // Check if time component is present
+    if (T.length() >= 19 && T[10] == 'T') {
+        if (T[13] != ':' || T[16] != ':') {
+            throw std::invalid_argument("Invalid time format - missing colons");
+        }
+        
+        hour = to_int(11, 2);
+        min = to_int(14, 2);
+        sec = to_int(17, 2);
+        
+        // Validate time values
+        if (hour < 0 || hour > 23) {
+            throw std::invalid_argument("Invalid hour");
+        }
+        if (min < 0 || min > 59) {
+            throw std::invalid_argument("Invalid minute");
+        }
+        if (sec < 0 || sec > 60) { // 60 for leap seconds
+            throw std::invalid_argument("Invalid second");
+        }
+        
+        // Look for fractional seconds
+        if (T.length() > 19 && T[19] == '.') {
+            size_t frac_start = 20;
+            size_t frac_end = frac_start;
+            
+            // Find end of fractional part
+            while (frac_end < T.length() && T[frac_end] >= '0' && T[frac_end] <= '9') {
+                frac_end++;
+            }
+            
+            if (frac_end > frac_start) {
+                std::string frac_str(T.substr(frac_start, frac_end - frac_start));
+                
+                // Convert to nanoseconds (pad or truncate to 9 digits)
+                if (frac_str.length() > 9) {
+                    frac_str = frac_str.substr(0, 9);
+                } else {
+                    while (frac_str.length() < 9) {
+                        frac_str += '0';
+                    }
+                }
+                nanoseconds = std::stoi(frac_str);
+            }
+        }
+    }
+
+    // Set up tm structure
     exp_time.tm_year = year - 1900;
-    exp_time.tm_mon  = month - 1; // 0-11
+    exp_time.tm_mon = month - 1; // 0-11
     exp_time.tm_mday = day;
     exp_time.tm_hour = hour;
-    exp_time.tm_min  = min;
-    exp_time.tm_sec  = sec;
-    exp_time.tm_isdst = 0; // UTC
+    exp_time.tm_min = min;
+    exp_time.tm_sec = sec;
+    exp_time.tm_isdst = -1; // Let mktime determine DST
 
-    // Compute day-of-year (tm_yday): days since Jan 1, [0, 365]
-    auto is_leap = [&](int y) {
-        return (y % 4 == 0) && ((y % 100 != 0) || (y % 400 == 0));
-    };
-    static const int cum_days_norm[12] = { 0, 31, 59, 90,120,151,181,212,243,273,304,334 };
-    int doy = cum_days_norm[month - 1] + (day - 1);
-    if (is_leap(year) && month > 2) {
-        ++doy;
+    // Save original TZ
+    const char* old_tz = getenv("TZ");
+    std::string old_tz_val;
+    bool had_tz = (old_tz != nullptr);
+    if (had_tz) {
+        old_tz_val = old_tz;
     }
-    exp_time.tm_yday = doy;
 
-    return static_cast<t_ns>(mktime(&exp_time)) * 1000000000ULL;
+    // Set to New York timezone since we're parsing NY time
+    if (setenv("TZ", "America/New_York", 1) != 0) {
+        throw std::runtime_error("Failed to set timezone");
+    }
+    tzset();
+
+    time_t tt = mktime(&exp_time);
+
+    // Restore original TZ
+    if (had_tz) {
+        setenv("TZ", old_tz_val.c_str(), 1);
+    } else {
+        unsetenv("TZ");
+    }
+    tzset();
+
+    if (tt == -1) {
+        throw std::invalid_argument("Invalid date/time - mktime failed");
+    }
+
+    t_ns result = static_cast<t_ns>(tt) * 1000000000ULL + nanoseconds;
+    return result;
 }
 
 double ns_to_yrs(t_ns tau) {

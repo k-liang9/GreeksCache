@@ -17,6 +17,7 @@ namespace test {
         string symbol;
     };
 
+    extern string test_expiry;
     extern vector<Contract> contracts;
     extern SimInput apple_market_conditions;
     extern SimInput google_market_conditions;
