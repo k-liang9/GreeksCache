@@ -129,22 +129,24 @@ void StateOrchestrator::build_and_publish_jobs(unique_ptr<SymbolState>& symbol_s
     size_t seqno = symbol_state->seqno();
     size_t calibration_version = symbol_state->calibration_version();
 
-    for (auto& batch : symbol_state->batches()) {
-        PublishJob job {
-            registry_.get_id_to_symbol().at(symbol_state->symbol_id()),
-            market_data.ts_ns,
-            market_data.spot, market_data.vol, market_data.rate, market_data.div_yield,
-            calibration_version, seqno,
-            batch->expiry_ts_ns(),
-            batch->tau(),
-            batch->engine_type(),
-            &batch->strikes(),
-            &batch->payoff_types(),
-            &batch->ranges(),
-            batch->theo(), batch->delta(), batch->gamma(), batch->vega(), batch->rho(), batch->theta()
-        };
+    for (const auto& [expiry_id, expiry_vec] : symbol_state->batches()) {
+        for (const auto& batch : expiry_vec) {
+            PublishJob job {
+                registry_.get_id_to_symbol().at(symbol_state->symbol_id()),
+                market_data.ts_ns,
+                market_data.spot, market_data.vol, market_data.rate, market_data.div_yield,
+                calibration_version, seqno,
+                batch->expiry_ts_ns(),
+                batch->tau(),
+                batch->engine_type(),
+                &batch->strikes(),
+                &batch->payoff_types(),
+                &batch->ranges(),
+                batch->theo(), batch->delta(), batch->gamma(), batch->vega(), batch->rho(), batch->theta()
+            };
 
-        redis_publisher_.enqueue_job(std::move(job));
+            redis_publisher_.enqueue_job(std::move(job));
+        }
     }
 }
 
@@ -156,5 +158,13 @@ void StateOrchestrator::sink_contract_changes(bool add, vector<Contract>& contra
 }
 
 void StateOrchestrator::flush_changes() {
-    registry_.update_registry(opened_contracts_, closed_contracts_);
+    //retire expiry slices
+    vector<pair<size_t, size_t>> retired_expiries;
+    registry_.find_expired_slices(retired_expiries);
+    for (const auto& [sid, eid] : retired_expiries) {
+        auto& symbol_state = symbol_table_[sid];
+        symbol_state->retire_expiry_slice(eid);
+    }
+
+    registry_.flush_user_changes(opened_contracts_, closed_contracts_);
 }

@@ -18,74 +18,6 @@
 using namespace std;
 using namespace sw::redis;
 
-void redis_test() {
-    auto redis = Redis("tcp://localhost:6379");
-    redis.set("kevin",  "liang");
-    auto val = redis.get("kevin");
-    if (val) {
-        cout << *val << '\n';
-    }
-}
-
-void print_contract_listing(const StateOrchestrator& orchestrator) {
-    cout << "=== CONTRACT LISTING ===" << endl;
-    cout << "Total Contracts: " << test::contracts.size() << endl << endl;
-    
-    size_t contract_num = 0;
-    for (const auto& [symbol_id, symbol_state] : orchestrator.symbol_table()) {
-        size_t batch_num = 0;
-        for (auto& batch : symbol_state->batches()) {
-            double time_to_expiry = ns_to_yrs(batch->expiry_ts_ns() - now());
-            cout << "Expiry Batch " << batch_num++ << " (T=" << fixed << setprecision(4) << time_to_expiry << " years):" << endl;
-            
-            const auto& strikes = batch->strikes();
-            const auto& payoff_types = batch->payoff_types();
-            
-            for (size_t i = 0; i < strikes.size(); i++) {
-                cout << "  Contract " << contract_num++ << ": " 
-                     << test::contracts[contract_num-1].symbol << " "
-                     << test::contracts[contract_num-1].expiry << " "
-                     << "$" << setw(6) << strikes[i] << " " 
-                     << (payoff_types[i] == VAN_CALL ? "CALL" : "PUT ") << endl;
-            }
-            cout << endl;
-        }
-    }
-    cout << endl;
-}
-
-void print_greeks_tick(const MarketData& data, const StateOrchestrator& orchestrator) {
-    cout << "=== TICK: " << data.symbol << " Spot=$" << fixed << setprecision(2) << data.spot 
-         << " Time=" << ns_to_s(data.ts_ns) << "s ===" << endl;
-    
-    for (const auto& [symbol_id, symbol_state] : orchestrator.symbol_table()) {
-        size_t contract_num = 0;
-        for (auto& batch : symbol_state->batches()) {
-            const auto& strikes = batch->strikes();
-            const auto& payoff_types = batch->payoff_types();
-            const auto& theos = batch->theo();
-            const auto& deltas = batch->delta();
-            const auto& gammas = batch->gamma();
-            const auto& vegas = batch->vega();
-            const auto& rhos = batch->rho();
-            const auto& thetas = batch->theta();
-            
-            for (size_t i = 0; i < strikes.size(); i++) {
-                cout << "  Option " << contract_num++ << ": " 
-                     << "$" << setw(7) << fixed << setprecision(2) << strikes[i] << " " 
-                     << (payoff_types[i] == VAN_CALL ? "CALL" : "PUT ") << endl
-                     << "    Theo=$" << setw(8) << setprecision(4) << theos[i]
-                     << " | Δ=" << setw(8) << setprecision(6) << deltas[i]
-                     << " | Γ=" << setw(8) << setprecision(6) << gammas[i] << endl
-                     << "    Vega=" << setw(8) << setprecision(6) << vegas[i]
-                     << " | ρ=" << setw(8) << setprecision(6) << rhos[i]
-                     << " | Θ=" << setw(8) << setprecision(6) << thetas[i] << endl;
-            }
-        }
-    }
-    cout << endl;
-}
-
 int main() {
     StateOrchestrator orchestrator = StateOrchestrator();
     orchestrator.initialize_state(test::contracts);
@@ -109,7 +41,7 @@ int main() {
         test::google_market_conditions.drift,
         test::google_market_conditions.symbol
     );
-    // print_contract_listing(orchestrator);
+    //print_contract_listing(orchestrator);
     boost::lockfree::spsc_queue<MarketData> apple_market_data_stream{128};
     boost::lockfree::spsc_queue<MarketData> google_market_data_stream{128};
 
@@ -169,10 +101,8 @@ int main() {
     });
 
     thread user_changes([&]{
-        while (!stop.load()) {
-            this_thread::sleep_for(chrono::seconds(3));
-            orchestrator.sink_contract_changes(true, test::user_changes);
-        }
+        this_thread::sleep_for(chrono::seconds(3));
+        orchestrator.sink_contract_changes(true, test::user_changes);
     });
     
     while (true) {

@@ -40,12 +40,7 @@ void UniverseRegistry::add_contracts(vector<Contract>& contracts) {
     }
 }
 
-void UniverseRegistry::update_registry(spsc_queue<Contract>& open, spsc_queue<Contract>& close) {
-    retire_expired_slices();
-    flush_user_changes(open, close);
-}
-
-void UniverseRegistry::retire_expired_slices() {
+void UniverseRegistry::find_expired_slices(vector<pair<size_t, size_t>>& retired_expiries) {
     for (size_t sid = 0; sid < expiry_queues_.size(); sid++) {
         t_ns now_ns = now();
         while (now_ns >= expiry_queues_[sid].top() + GRACE_PERIOD_NS) {
@@ -54,7 +49,7 @@ void UniverseRegistry::retire_expired_slices() {
             ExpiryMeta* meta = ns_to_meta_[sid][expiry_ns];
             meta->status = RETIRED;
             meta->retired_at = now_ns;
-            cout << "retired an expiry with expiry: " << ns_to_iso8601_ny(expiry_ns, true) << "\n\n";
+            retired_expiries.push_back({sid, meta->expiry_id});
         }
     }
 }

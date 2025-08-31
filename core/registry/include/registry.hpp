@@ -79,14 +79,13 @@ private:
     void track_new_symbol(string& symbol);
     void add_new_expiry(size_t symbol_id, t_ns expiry_ns);
     void add_new_contract(size_t symbol_id, size_t expiry_id, float strike, PayoffType payoff_type);
-    void flush_user_changes(spsc_queue<Contract>& open, spsc_queue<Contract>& close);
-    void retire_expired_slices();
 
 public:
     UniverseRegistry() : epoch_(0) {}
     UniverseRegistry(vector<Contract>& contracts);
 
-    void update_registry(spsc_queue<Contract>& open, spsc_queue<Contract>& close);
+    void flush_user_changes(spsc_queue<Contract>& open, spsc_queue<Contract>& close);
+    void find_expired_slices(vector<pair<size_t, size_t>>& retired_expiries);
     void add_contracts(vector<Contract>& contracts);
     static EngineType engine_of(PayoffType type);
 

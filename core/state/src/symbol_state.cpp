@@ -1,4 +1,5 @@
 #include <memory>
+#include <iostream>
 #include "symbol_state.hpp"
 #include "types.hpp"
 
@@ -17,8 +18,10 @@ void SymbolState::process_tick(MarketData& data) {
 
     MarketSnapshot snapshot = {spot_, vol_, rate_, div_yield_, as_of_ns_, seqno_};
 
-    for (auto& batch : batches_) {
-        batch->process_tick(snapshot);
+    for (auto& [expiry_id, expiry_vec] : batches_) {
+        for (auto& batch : expiry_vec) {
+            batch->process_tick(snapshot);
+        }
     }
 }
 
@@ -29,5 +32,9 @@ void SymbolState::add_expiry_batch(
     vector<double> strikes,
     vector<PayoffType> payoff_types,
     vector<pair<size_t, size_t>> ranges) {
-    batches_.emplace_back(make_unique<BSBatch>(expiry_id, expiry_ns, engine_type, std::move(strikes), std::move(payoff_types), std::move(ranges)));
+    batches_[expiry_id].emplace_back(make_unique<BSBatch>(expiry_id, expiry_ns, engine_type, std::move(strikes), std::move(payoff_types), std::move(ranges)));
+}
+
+void SymbolState::retire_expiry_slice(size_t expiry_id) {
+    batches_.erase(expiry_id);
 }
