@@ -80,9 +80,8 @@ MissingLevel UniverseRegistry::missing_level_of(Contract& contract) {
         return EXPIRY;
     }
     size_t expiry_id = expiry_to_id_[symbol_id][expiry];
-    //TODO: will need to fix once expiry-batched contract_ids are implemented
-    ContractKey key = {expiry_id, contract.strike, contract.payoff_type};
-    if (!contract_to_id_[symbol_id].contains(key)) {
+    ContractKey key = {contract.strike, contract.payoff_type};
+    if (!contract_to_id_[symbol_id][expiry_id].contains(key)) {
         return CONTRACT;
     } else {
         return EXISTS;
@@ -94,21 +93,23 @@ MissingLevel UniverseRegistry::missing_level_of(Contract& contract) {
 void UniverseRegistry::track_new_symbol(string& symbol) {
     id_to_symbol_.push_back(symbol);
     symbol_to_id_[symbol] = id_to_symbol_.size() - 1;
-    expiry_to_id_.emplace_back(unordered_map<t_ns, size_t>{});
-    id_to_expiry_.emplace_back(vector<t_ns>{});
-    contract_to_id_.emplace_back(unordered_map<ContractKey, size_t, ContractKeyHash>{});
-    id_to_contract_.emplace_back(vector<ContractKey>{});
+    expiry_to_id_.emplace_back();
+    id_to_expiry_.emplace_back();
+    contract_to_id_.emplace_back();
+    id_to_contract_.emplace_back();
 }
 
 void UniverseRegistry::add_new_expiry(size_t symbol_id, t_ns expiry_ns) {
     id_to_expiry_[symbol_id].push_back(expiry_ns);
     expiry_to_id_[symbol_id][expiry_ns] = id_to_expiry_[symbol_id].size() - 1;
+    contract_to_id_[symbol_id].emplace_back();
+    id_to_contract_[symbol_id].emplace_back();
 }
 
 void UniverseRegistry::add_new_contract(size_t symbol_id, size_t expiry_id, float strike, PayoffType payoff_type) {
-    ContractKey contract_key = {expiry_id, strike, payoff_type};
-    id_to_contract_[symbol_id].push_back(contract_key);
-    contract_to_id_[symbol_id][contract_key] = id_to_contract_[symbol_id].size() - 1;
+    ContractKey contract_key = {strike, payoff_type};
+    id_to_contract_[symbol_id][expiry_id].push_back(contract_key);
+    contract_to_id_[symbol_id][expiry_id][contract_key] = id_to_contract_[symbol_id].size() - 1;
 }
 
 EngineType UniverseRegistry::engine_of(PayoffType type) {

@@ -36,39 +36,39 @@ void StateOrchestrator::initialize_state(vector<Contract>& contracts) {
     for (size_t sid = 0; sid < num_symbols; sid++) {
         symbol_table_[sid] = make_unique<SymbolState>(sid);
         
-        using expiry_key = pair<size_t, EngineType>;
         using expiry_value = pair<vector<PayoffType>, vector<double>>;
 
         //batch all contracts under the same symbol into engine + expiry batches
-        unordered_map<expiry_key, expiry_value> expiry_batches;
-        for (const ContractKey& contract : registry_.get_id_to_contract()[sid]) {
-            EngineType engine_type = UniverseRegistry::engine_of(contract.payoff_type);
-            expiry_key key = {contract.expiry_id, engine_type};
-            expiry_value& contracts = expiry_batches[key];
-            contracts.first.push_back(contract.payoff_type);
-            contracts.second.push_back(contract.strike);
-        }
-        
-        //sort the batches by payoff type and create ExpiryBatch
-        for (auto it = expiry_batches.begin(); it != expiry_batches.end(); it++) {
-            size_t expiry_id = it->first.first;
-            EngineType engine_type = it->first.second;
-            vector<PayoffType>& payoff_types = it->second.first;
-            vector<double>& strikes = it->second.second;
-            t_ns expiry_ns = registry_.get_id_to_expiry()[sid][expiry_id];
+        for (size_t eid = 0; eid < registry_.get_id_to_contract().at(sid).size(); eid++) {
+            const auto& expiry_map = registry_.get_id_to_contract().at(sid).at(eid);
+            unordered_map<EngineType, expiry_value> engine_batches;
+            for (const ContractKey& contract : expiry_map) {
+                EngineType engine_type = UniverseRegistry::engine_of(contract.payoff_type);
+                expiry_value& contracts = engine_batches[engine_type];
+                contracts.first.push_back(contract.payoff_type);
+                contracts.second.push_back(contract.strike);
+            }
 
-            vector<pair<size_t, size_t>> ranges = build_expiry_batch(payoff_types, strikes);
+            //sort the batches by payoff type and create ExpiryBatch
+            for (auto it = engine_batches.begin(); it != engine_batches.end(); it++) {
+                EngineType engine_type = it->first;
+                vector<PayoffType>& payoff_types = it->second.first;
+                vector<double>& strikes = it->second.second;
+                t_ns expiry_ns = registry_.get_id_to_expiry()[sid][eid];
 
-            switch(engine_type) {
-                case BS_ANALYTIC:
-                    symbol_table_[sid]->add_expiry_batch(
-                        expiry_id, expiry_ns, engine_type, 
-                        std::move(strikes), std::move(payoff_types), std::move(ranges)
-                    );
-                    break;
-                default:
-                    cout << "no valid engine type\n";
-                    break;
+                vector<pair<size_t, size_t>> ranges = build_expiry_batch(payoff_types, strikes);
+
+                switch(engine_type) {
+                    case BS_ANALYTIC:
+                        symbol_table_[sid]->add_expiry_batch(
+                            eid, expiry_ns, engine_type, 
+                            std::move(strikes), std::move(payoff_types), std::move(ranges)
+                        );
+                        break;
+                    default:
+                        cout << "no valid engine type\n";
+                        break;
+                }
             }
         }
     }
