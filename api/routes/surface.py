@@ -16,7 +16,7 @@ def parse_contract(contract_list : List[Tuple[str, RedisContract]]) -> Surface:
         strike = contract_key_to_contract(key).strike
         vector_dict = {
             "strike": strike,
-            "time_to_expiry_yrs": 0.0, #TODO
+            "time_to_expiry_yrs": r_contract.time_to_expiry_yrs,
             "vol": r_contract.vol
         }
         contract_vectors.append(ContractVector(**vector_dict))

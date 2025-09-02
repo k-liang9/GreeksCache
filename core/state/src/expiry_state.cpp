@@ -62,6 +62,22 @@ void IExpiryBatch::process_tick(MarketSnapshot& snapshot) {
     swap_buffers();
 }
 
+bool IExpiryBatch::has_headroom(size_t index) {
+    size_t theo_contract_index = contract_ranges_[index].second;
+    if (index == contract_ranges_.size()) {
+        return theo_contract_index < strikes_.size();
+    } else {
+        return theo_contract_index < contract_ranges_[index+1].first;
+    }
+}
+
+void IExpiryBatch::append_new_contract(float strike, PayoffType payoff_type, size_t range_index) {
+    size_t theo_contract_index = contract_ranges_[range_index].second;
+    contract_ranges_[range_index].second++;
+    strikes_[theo_contract_index] = strike;
+    payoff_types_[theo_contract_index] = payoff_type;
+}
+
 BSBatch::BSBatch(size_t expiry_id, t_ns expiry_ns, EngineType engine_type, vector<double> strikes, vector<PayoffType> payoff_types, vector<pair<size_t, size_t>> ranges) :
 IExpiryBatch(expiry_id, expiry_ns, engine_type, std::move(strikes), std::move(payoff_types), std::move(ranges)) {
     fill(d1_.begin(), d1_.end(), 0.0);
@@ -109,6 +125,18 @@ KernelScratch BSBatch::prepare_tick(MarketSnapshot& data) {
     }
 
     return {d1_, d2_};
+}
+
+void BSBatch::append_new_contract(float strike, PayoffType payoff_type, size_t range_index) {
+    IExpiryBatch::append_new_contract(strike, payoff_type, range_index);
+    if (are_payoffs_in_same_group(payoff_type, VAN_CALL)) {
+        size_t contract_index = contract_ranges_[range_index].second - 1;
+        if (payoff_type == VAN_CALL) {
+            vanilla_type_mask_[contract_index] = 1;
+        } else if (payoff_type == VAN_PUT) {
+            vanilla_type_mask_[contract_index] = -1;
+        }
+    }
 }
 
 BatchInputs BSBatch::compile_batch_inputs() {

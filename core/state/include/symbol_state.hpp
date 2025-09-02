@@ -36,7 +36,7 @@ public:
         vector<pair<size_t, size_t>> ranges);
     void retire_expiry_slice(size_t expiry_id);
 
-    const auto& batches() { return batches_; }
+    auto& batches() { return batches_; }
     const size_t symbol_id() { return symbol_id_; }
     const t_ns as_of_ns() { return as_of_ns_; }
     const size_t seqno() { return seqno_; }

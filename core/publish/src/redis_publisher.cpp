@@ -115,6 +115,6 @@ void RedisPublisher::enqueue_job(PublishJob job) {
     if (jobs_queue_.write_available()) {
         jobs_queue_.push(std::move(job));
     } else {
-        //TODO: implement
+        //TODO: implement fallback to if queue is full
     }
 }

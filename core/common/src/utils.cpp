@@ -269,3 +269,17 @@ const string payoff_type_to_string(PayoffType type) {
         default:       return "UNKNOWN";
     }
 }
+
+int get_payoff_group_id(PayoffType payoff) {
+    switch(payoff) {
+        case VAN_CALL:
+        case VAN_PUT:
+            return 0; // Group 0: vanilla options
+        default:
+            return -1; // No group
+    }
+}
+
+bool are_payoffs_in_same_group(PayoffType a, PayoffType b) {
+    return (a == VAN_CALL || a == VAN_PUT) && (b == VAN_CALL || b == VAN_PUT);
+}

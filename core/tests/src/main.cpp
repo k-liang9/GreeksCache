@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <atomic>
 #include <thread>
+#include <chrono>
 #include <unordered_map>
 #include <iterator>
 #include <boost/lockfree/spsc_queue.hpp>
@@ -56,6 +57,7 @@ int main() {
 
     thread compute_core([&]{
         MarketData data;
+        auto last_flush = chrono::steady_clock::now();
         while (!stop.load()) {
             if (apple_market_data_stream.pop(data) || google_market_data_stream.pop(data)) {
                 orchestrator.process_tick(data);
@@ -63,12 +65,19 @@ int main() {
             } else {
                 this_thread::sleep_for(chrono::milliseconds(5));
             }
+            
+            // Flush changes every 5 seconds
+            auto now = chrono::steady_clock::now();
+            if (chrono::duration_cast<chrono::seconds>(now - last_flush).count() >= 5) {
+                orchestrator.flush_changes();
+                last_flush = now;
+            }
         }
     });
 
     thread updater([&]{
         while (!stop.load()) {
-            orchestrator.flush_changes();
+            // orchestrator.flush_changes();
             this_thread::sleep_for(chrono::seconds(5));
         }
     });
@@ -102,7 +111,7 @@ int main() {
 
     thread user_changes([&]{
         this_thread::sleep_for(chrono::seconds(3));
-        orchestrator.sink_contract_changes(true, test::user_changes);
+        orchestrator.sink_contract_changes(test::user_changes);
     });
     
     while (true) {

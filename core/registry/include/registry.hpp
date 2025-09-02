@@ -24,23 +24,23 @@ enum MissingLevel {
     CONTRACT = 3
 };
 
-struct ContractKey {
+struct ContractDetails {
     int strike_scaled;
     PayoffType payoff_type;
     
-    bool operator==(const ContractKey& other) const {
+    bool operator==(const ContractDetails& other) const {
         return strike_scaled == other.strike_scaled && 
                payoff_type == other.payoff_type;
     }
     
-    bool operator<(const ContractKey& other) const {
+    bool operator<(const ContractDetails& other) const {
         if (strike_scaled != other.strike_scaled) return strike_scaled < other.strike_scaled;
         return payoff_type < other.payoff_type;
     }
 };
 
-struct ContractKeyHash {
-    size_t operator()(const ContractKey& key) const {
+struct ContractDetailsHash {
+    size_t operator()(const ContractDetails& key) const {
         return std::hash<double>()(key.strike_scaled) ^
                (std::hash<int>()(static_cast<int>(key.payoff_type)) << 1);
     }
@@ -58,6 +58,14 @@ struct ExpiryMeta {
     t_ns retired_at = 0;
 };
 
+struct ContractMeta {
+    size_t symbol_id;
+    size_t expiry_id;
+    size_t contract_id;
+    EngineType engine_type;
+    PayoffType payoff_type;
+};
+
 class UniverseRegistry {
 private:
     unordered_map<string, size_t> symbol_to_id_;
@@ -65,8 +73,8 @@ private:
     vector<unordered_map<t_ns, size_t>> expiry_to_id_;
     vector<vector<t_ns>> id_to_expiry_;
 
-    vector<vector<unordered_map<ContractKey, size_t, ContractKeyHash>>> contract_to_id_;
-    vector<vector<vector<ContractKey>>> id_to_contract_;
+    vector<vector<unordered_map<ContractDetails, size_t, ContractDetailsHash>>> contract_to_id_;
+    vector<vector<vector<ContractDetails>>> id_to_contract_;
 
     vector<vector<ExpiryMeta>> expiry_metas_;
     vector<unordered_map<t_ns, ExpiryMeta*>> ns_to_meta_;
@@ -84,20 +92,20 @@ public:
     UniverseRegistry() : epoch_(0) {}
     UniverseRegistry(vector<Contract>& contracts);
 
-    void flush_user_changes(spsc_queue<Contract>& open, spsc_queue<Contract>& close);
+    void flush_user_changes(spsc_queue<Contract>& open, vector<ContractMeta>& contract_metas);
     void find_expired_slices(vector<pair<size_t, size_t>>& retired_expiries);
     void add_contracts(vector<Contract>& contracts);
     static EngineType engine_of(PayoffType type);
 
-    const unordered_map<string, size_t>& get_symbol_to_id() { return symbol_to_id_; }
-    const vector<string>& get_id_to_symbol() { return id_to_symbol_; }
-    const vector<unordered_map<t_ns, size_t>>& get_expiry_to_id() { return expiry_to_id_; }
-    const vector<vector<t_ns>>& get_id_to_expiry() { return id_to_expiry_; }
-    const auto& get_contract_to_id() { return contract_to_id_; }
-    const auto& get_id_to_contract() { return id_to_contract_; }
-    const vector<vector<ExpiryMeta>>& get_expiry_metas() { return expiry_metas_; }
-    const vector<unordered_map<t_ns, ExpiryMeta*>>& get_ns_to_meta() { return ns_to_meta_; }
-    const vector<priority_queue<t_ns, vector<t_ns>, std::greater<t_ns>>>& get_expiry_queues() { return expiry_queues_; }
+    const unordered_map<string, size_t>& symbol_to_id() { return symbol_to_id_; }
+    const vector<string>& id_to_symbol() { return id_to_symbol_; }
+    const vector<unordered_map<t_ns, size_t>>& expiry_to_id() { return expiry_to_id_; }
+    const vector<vector<t_ns>>& id_to_expiry() { return id_to_expiry_; }
+    const auto& contract_to_id() { return contract_to_id_; }
+    const auto& id_to_contract() { return id_to_contract_; }
+    const vector<vector<ExpiryMeta>>& expiry_metas() { return expiry_metas_; }
+    const vector<unordered_map<t_ns, ExpiryMeta*>>& ns_to_meta() { return ns_to_meta_; }
+    const vector<priority_queue<t_ns, vector<t_ns>, std::greater<t_ns>>>& expiry_queues() { return expiry_queues_; }
 
     const size_t epoch() { return epoch_; }
 };

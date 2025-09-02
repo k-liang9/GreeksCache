@@ -1,7 +1,7 @@
 # Real-Time Greeks Cache -- API Contract (v0.2)
 
 Owner: Kevin Liang  
-Date: Aug 30, 2025  
+Date: Sep 2, 2025  
 Status: Draft  
 Audience: Client developers, backend developers, QA  
 
@@ -119,80 +119,109 @@ GET /health/ready
 ### 5.2 greeks (single contract)
 Fetches greeks for a single European option contract.
 
-GET /greeks?symbol=SYMBOL%expiry=DATE&strike=K&type=C|P
+POST /greeks
+
+Request body (Pydantic model):
+```json
+{
+  "symbol": "AAPL",
+  "expiry": "2025-09-19",
+  "strike": 150.95,
+  "type": "C"
+}
+```
 
 200 OK  
 ```json
 {
-    "contract": {
-        "symbol": "AAPL",
-        "expiry": "2025-09-19",
-        "strike": "150.95",
-        "type": "C"
+  "contract": {
+    "symbol": "AAPL",
+    "expiry": "2025-09-19",
+    "strike": "150.95",
+    "type": "C"
+  },
+  "snapshot": {
+    "as_of": "2025-08-17T13:45:01Z",
+    "time_to_expiry_yrs": 0.84,
+    "stale": false,
+    "inputs": {
+      "spot": 196.42,
+      "vol": 0.24,
+      "rate": 0.03,
+      "div_yield": 0.00
     },
-    "snapshot": {
-        "as_of": "2025-08-17T13:45:01Z",
-        "time_to_expiry_yrs": 0.84,
-        "stale": false,
-        "inputs": {
-            "spot": 196.42,
-            "vol": 0.24,
-            "rate": 0.03,
-            "div_yield": 0.00,
-        }, 
-        "outputs": {
-            "theo_price": 12.3456,
-            "delta": 0.53,
-            "gamma": 0.0081,
-            "vega": 0.145,
-            "rho": 0.456,
-            "theta": -0.0123
-        }
+    "outputs": {
+      "theo_price": 12.3456,
+      "delta": 0.53,
+      "gamma": 0.0081,
+      "vega": 0.145,
+      "rho": 0.456,
+      "theta": -0.0123
     }
+  }
 }
 ```
 
-400: INVALID_ARGUMENT, NOT_FOUND    
+400: INVALID_ARGUMENT, NOT_FOUND
 500: SERVICE_UNAVAILABLE, INTERNAL
 
 ---
 
+
 ### 5.3 List Tracked Contracts
 Lists all tracked option contracts for a given symbol.
 
-GET /contracts?symbol=SYMBOL
+POST /contracts
 
-200 OK  
+Request body (Pydantic model):
 ```json
+// optional
 {
-  [
-    {
-      "symbol": "AAPL",
-      "expiry": "2025-09-19",
-      "strike": 150.0,
-      "type": "C"
-    },
-    {
-      "symbol": "AAPL",
-      "expiry": "2025-09-19",
-      "strike": 155.0,
-      "type": "P"
-    }
-    // ...more contracts...
-  ]
+  "symbol": "AAPL", //optional
+  "expiry": "2025-09-19", //optional
+  "strike": 150.95, //optional
+  "type": "C" //optional
 }
 ```
-400: INVALID_ARGUMENT  
+
+200 OK
+```json
+[
+  {
+    "symbol": "AAPL",
+    "expiry": "2025-09-19",
+    "strike": 150.0,
+    "type": "C"
+  },
+  {
+    "symbol": "AAPL",
+    "expiry": "2025-09-19",
+    "strike": 155.0,
+    "type": "P"
+  }
+  // ...more contracts...
+]
+```
+400: INVALID_ARGUMENT
 500: INTERNAL
 
 ---
 
+
 ### 5.4 Option Surface
 Returns a 3D vector surface of (strike, time_to_expiry, vol) for a symbol and expiry.
 
-GET /surface?symbol=SYMBOL&expiry=DATE
+POST /surface
 
-200 OK  
+Request body (Pydantic model):
+```json
+{
+  "symbol": "AAPL",
+  "expiry": "2025-09-19" //optional
+}
+```
+
+200 OK
 ```json
 {
   "symbol": "AAPL",
@@ -212,7 +241,7 @@ GET /surface?symbol=SYMBOL&expiry=DATE
   ]
 }
 ```
-400: INVALID_ARGUMENT, NOT_FOUND  
+400: INVALID_ARGUMENT, NOT_FOUND
 500: INTERNAL
 
 ---
@@ -251,12 +280,23 @@ GET /summary
 
 ---
 
+
 ### 5.6 Positions
 Lists all positions that match a contract.
 
-GET /positions?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
+POST /positions/query
 
-200 OK  
+Request body (Pydantic model):
+```json
+{
+  "symbol": "AAPL",
+  "expiry": "2025-09-19",
+  "strike": 150.0,
+  "type": "C"
+}
+```
+
+200 OK
 ```json
 {
   "positions": [
@@ -273,7 +313,7 @@ GET /positions?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
   "stale": false
 }
 ```
-400: INVALID_ARGUMENT, NOT_FOUND    
+400: INVALID_ARGUMENT, NOT_FOUND
 500: INTERNAL
 
 ---
@@ -305,52 +345,80 @@ Request body:
 
 ---
 
+
 ### 5.8 Adjust Portfolio Positions
 Adjusts units for positions that match a contract.
 
-PATCH /positions?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
+PATCH /positions/adjust
 
-Request body:
+Request body (Pydantic model):
 ```json
 {
+  "symbol": "AAPL",
+  "expiry": "2025-09-19",
+  "strike": 150.0,
+  "type": "C",
   "units_delta": -5
 }
 ```
-200 OK  
+
+200 OK
 ```json
 {
   "updated": 1,
   "status": "updated"
 }
 ```
-400: INVALID_ARGUMENT, NOT_FOUND    
+400: INVALID_ARGUMENT, NOT_FOUND
 500: INTERNAL
 
 ---
 
+
 ### 5.9 Close Positions
 Closes positions that match a contract across all portfolios.
 
-DELETE /positions?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
+DELETE /positions/close
 
-200 OK  
+Request body (Pydantic model):
+```json
+{
+  "symbol": "AAPL",
+  "expiry": "2025-09-19",
+  "strike": 150.0,
+  "type": "C"
+}
+```
+
+200 OK
 ```json
 {
   "deleted": 3,
   "status": "deleted"
 }
 ```
-400: INVALID_ARGUMENT, NOT_FOUND    
+400: INVALID_ARGUMENT, NOT_FOUND
 500: INTERNAL
 
 ---
 
+
 ### 5.10 Revalue Positions
 Recomputes and returns aggregated summary greeks for positions that match a contract across all portfolios.
 
-POST /positions/revalue?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
+POST /positions/revalue
 
-200 OK  
+Request body (Pydantic model):
+```json
+{
+  "symbol": "AAPL",
+  "expiry": "2025-09-19",
+  "strike": 150.0,
+  "type": "C"
+}
+```
+
+200 OK
 ```json
 {
   "summary_greeks": {
@@ -364,7 +432,7 @@ POST /positions/revalue?symbol=SYMBOL&expiry=DATE&strike=K&type=C|P
   "stale": false
 }
 ```
-400: INVALID_ARGUMENT, NOT_FOUND    
+400: INVALID_ARGUMENT, NOT_FOUND
 500: INTERNAL
 
 ## 6: Redis Key Schema

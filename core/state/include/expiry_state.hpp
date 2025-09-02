@@ -48,14 +48,16 @@ public:
 
     void process_tick(MarketSnapshot& snapshot);
     void swap_buffers();
+    bool has_headroom(size_t index);
+    virtual void append_new_contract(float strike, PayoffType payoff_type, size_t range_index);
     
-    const vector<double>& theo() const { return theo_.read(); }
-    const vector<double>& delta() const { return delta_.read(); }
-    const vector<double>& gamma() const { return gamma_.read(); }
-    const vector<double>& vega() const { return vega_.read(); }
-    const vector<double>& rho() const { return rho_.read(); }
-    const vector<double>& theta() const { return theta_.read(); }
-    const vector<pair<size_t, size_t>>& ranges() const { return contract_ranges_; }
+    const vector<double>& theo() { return theo_.read(); }
+    const vector<double>& delta() { return delta_.read(); }
+    const vector<double>& gamma() { return gamma_.read(); }
+    const vector<double>& vega() { return vega_.read(); }
+    const vector<double>& rho() { return rho_.read(); }
+    const vector<double>& theta() { return theta_.read(); }
+    const vector<pair<size_t, size_t>>& ranges() { return contract_ranges_; }
     const vector<double>& strikes() { return strikes_; }
     const vector<PayoffType>& payoff_types() { return payoff_types_; }
     const size_t expiry_id() { return expiry_id_; }
@@ -70,6 +72,7 @@ public:
     BSBatch(size_t expiry_id, t_ns expiry_ns, EngineType engine_type, 
             vector<double> strikes, vector<PayoffType> payoff_types,
             vector<pair<size_t, size_t>> ranges);
+    void append_new_contract(float strike, PayoffType payoff_type, size_t range_index) override;
 
 private:
     vector<double> d1_, d2_;

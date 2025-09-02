@@ -13,7 +13,6 @@ enum PayoffType {
     VAN_CALL,
     VAN_PUT,
     NUM_OPTION_TYPES,
-    VANILLA,
     PAYOFFTYPE_ERROR
 };
 

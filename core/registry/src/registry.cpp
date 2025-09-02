@@ -54,7 +54,7 @@ void UniverseRegistry::find_expired_slices(vector<pair<size_t, size_t>>& retired
     }
 }
 
-void UniverseRegistry::flush_user_changes(spsc_queue<Contract>& open, spsc_queue<Contract>& close) {
+void UniverseRegistry::flush_user_changes(spsc_queue<Contract>& open, vector<ContractMeta>& contract_metas) {
     Contract contract;
     //add contracts of opened positions
     while (open.pop(contract)) {
@@ -83,12 +83,17 @@ void UniverseRegistry::flush_user_changes(spsc_queue<Contract>& open, spsc_queue
             add_new_contract(symbol_id, expiry_id, contract.strike, contract.payoff_type);
         }
 
-        cout << "contract added\n";
-    }
-    //remove contracts of closed positions
-    while (close.pop(contract)) {
-        MissingLevel missing = missing_level_of(contract);
+        size_t contract_id = id_to_contract_[symbol_id][expiry_id].size() - 1;
 
+        contract_metas.push_back({
+            symbol_id, 
+            expiry_id, 
+            contract_id, 
+            engine_of(contract.payoff_type),
+            contract.payoff_type
+        });
+
+        cout << "contract added\n";
     }
 }
 
@@ -103,7 +108,7 @@ MissingLevel UniverseRegistry::missing_level_of(Contract& contract) {
         return EXPIRY;
     }
     size_t expiry_id = expiry_to_id_[symbol_id][expiry];
-    ContractKey key = {(int)(contract.strike * STRIKE_SCALE), contract.payoff_type};
+    ContractDetails key = {(int)(contract.strike * STRIKE_SCALE), contract.payoff_type};
     if (!contract_to_id_[symbol_id][expiry_id].contains(key)) {
         return CONTRACT;
     } else {
@@ -137,7 +142,7 @@ void UniverseRegistry::add_new_expiry(size_t symbol_id, t_ns expiry_ns) {
 }
 
 void UniverseRegistry::add_new_contract(size_t symbol_id, size_t expiry_id, float strike, PayoffType payoff_type) {
-    ContractKey contract_key = {(int)(strike * STRIKE_SCALE), payoff_type};
+    ContractDetails contract_key = {(int)(strike * STRIKE_SCALE), payoff_type};
     id_to_contract_[symbol_id][expiry_id].push_back(contract_key);
     contract_to_id_[symbol_id][expiry_id][contract_key] = id_to_contract_[symbol_id].size() - 1;
 }
