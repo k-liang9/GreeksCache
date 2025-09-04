@@ -1,5 +1,6 @@
 add_library(ingest
     src/gbm_sim.cpp
+    src/mailbox.cpp
 )
 
 cmake_policy(SET CMP0167 NEW)

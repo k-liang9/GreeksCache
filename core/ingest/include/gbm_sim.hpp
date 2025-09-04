@@ -4,6 +4,7 @@
 #include <string>
 #include <random>
 #include <boost/lockfree/spsc_queue.hpp>
+#include "mailbox.hpp"
 #include "utils.hpp"
 #include "types.hpp"
 
@@ -30,7 +31,8 @@ public:
         double S0, double vol_annual, double rate, double div_yield,
         double drift_annual,
         string symbol);
-    void run(boost::lockfree::spsc_queue<MarketData>& market_data_queue);
+    void run(boost::lockfree::spsc_queue<MarketData>& market_data_queue); //FIXME: probably only for benchmarking
+    void run(MarketMailbox& mailbox);
 };
 
 #endif

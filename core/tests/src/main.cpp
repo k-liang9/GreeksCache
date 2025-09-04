@@ -15,6 +15,7 @@
 #include "state_orchestrator.hpp"
 #include "utils.hpp"
 #include "gbm_sim.hpp"
+#include "mailbox.hpp"
 
 using namespace std;
 using namespace sw::redis;
@@ -43,15 +44,19 @@ int main() {
         test::google_market_conditions.symbol
     );
     //print_contract_listing(orchestrator);
-    boost::lockfree::spsc_queue<MarketData> apple_market_data_stream{128};
-    boost::lockfree::spsc_queue<MarketData> google_market_data_stream{128};
+    // boost::lockfree::spsc_queue<MarketData> apple_market_data_stream{128};
+    // boost::lockfree::spsc_queue<MarketData> google_market_data_stream{128};
+    MarketMailbox apple_mb{};
+    MarketMailbox google_mb{};
+    size_t apple_seq = 0;
+    size_t google_seq = 0;
 
     atomic<bool> stop{false};
 
     thread market_sim([&]{
         while (!stop.load()) {
-            apple_sim.run(apple_market_data_stream);
-            google_sim.run(google_market_data_stream);
+            apple_sim.run(apple_mb);
+            google_sim.run(google_mb);
         }
     });
 
@@ -59,7 +64,11 @@ int main() {
         MarketData data;
         auto last_flush = chrono::steady_clock::now();
         while (!stop.load()) {
-            if (apple_market_data_stream.pop(data) || google_market_data_stream.pop(data)) {
+            if (apple_mb.read_if_updated(data, apple_seq) || google_mb.read_if_updated(data, google_seq)) {
+                auto now = chrono::steady_clock::now();
+                orchestrator.flush_changes();
+                last_flush = now;
+
                 orchestrator.process_tick(data);
                 // print_greeks_tick(data, orchestrator);
             } else {
@@ -72,13 +81,6 @@ int main() {
                 orchestrator.flush_changes();
                 last_flush = now;
             }
-        }
-    });
-
-    thread updater([&]{
-        while (!stop.load()) {
-            // orchestrator.flush_changes();
-            this_thread::sleep_for(chrono::seconds(5));
         }
     });
 
@@ -122,7 +124,6 @@ int main() {
     compute_core.join();
     publisher.join();
     reader.join();
-    updater.join();
     user_changes.join();
 
     return 0;
