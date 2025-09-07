@@ -53,10 +53,10 @@ async def get_contracts(request: Request, contract: Contract = Contract()) -> Si
         contract.type == ""
     ):
         raise AppError(400, "INVALID_ARGUMENT", "contract fields incomplete", contract.model_dump())
-    key = get_contract_key(contract)
+    contract_key = "greeks:" + get_key(contract)
     if not hasattr(request.app.state, "redis"):
         raise AppError(500, "INTERNAL", "could not find redis client")
-    contract_list = await find_greeks(request.app.state.redis, key)
+    contract_list = await find_greeks(request.app.state.redis, contract_key)
     if len(contract_list) == 0:
         raise AppError(400, "INVALID_ARGUMENT", "no contract with specified terms found", contract.model_dump())
     return parse_contract(contract_list)

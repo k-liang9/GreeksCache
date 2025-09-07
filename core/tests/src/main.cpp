@@ -20,6 +20,12 @@
 using namespace std;
 using namespace sw::redis;
 
+bool g_ready = false;
+
+const bool core_ready() {
+    return g_ready;
+}
+
 int main() {
     StateOrchestrator orchestrator = StateOrchestrator();
     orchestrator.initialize_state(test::contracts);
@@ -115,6 +121,8 @@ int main() {
         this_thread::sleep_for(chrono::seconds(3));
         orchestrator.sink_contract_changes(test::user_changes);
     });
+
+    g_ready = true;
     
     while (true) {
         this_thread::sleep_for(chrono::milliseconds(5));

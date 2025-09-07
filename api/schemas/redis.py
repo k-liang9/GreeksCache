@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Dict
 
 class RedisContract(BaseModel):
     as_of: str
@@ -15,3 +16,6 @@ class RedisContract(BaseModel):
     calibration_version: int
     seqno: int
     time_to_expiry_yrs: float
+    
+class ContractCount(BaseModel):
+    units: Dict

@@ -1,6 +1,5 @@
 import redis.asyncio as redis
-from typing import List
-from typing import Tuple
+from typing import List, Tuple, Dict
 from schemas.redis import *
 
 async def find_greeks(r : redis.Redis, key : str) -> List[Tuple[str, RedisContract]]:
@@ -28,3 +27,14 @@ async def find_contracts(r : redis.Redis, key : str) -> List[str]:
         if cursor == 0:
             break
     return all_contracts
+
+async def find_units_count(r : redis.Redis, key : str) -> Dict:
+    cursor = 0
+    all_positions = {}
+    while True:
+        cursor, positions_batch = await r.hscan(name="positions", cursor=cursor, match=key, count=100)
+        if positions_batch:
+            all_positions.update(positions_batch)
+        if cursor == 0:
+            break
+    return all_positions

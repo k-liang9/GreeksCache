@@ -12,6 +12,7 @@ from routes.health import router as health_router
 from routes.contracts import router as contracts_router
 from routes.greeks import router as greeks_router
 from routes.surface import router as surface_router
+from routes.positions import router as positions_router
 
 async def redis_heartbeat(app, redis, interval=2):
     logger.info("created redis heartbeat task")
@@ -68,6 +69,7 @@ app.include_router(health_router)
 app.include_router(contracts_router)
 app.include_router(greeks_router)
 app.include_router(surface_router)
+app.include_router(positions_router)
 register_exception_handlers(app)
 
 @app.get("/")

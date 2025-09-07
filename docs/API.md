@@ -1,7 +1,7 @@
 # Real-Time Greeks Cache -- API Contract (v0.2)
 
 Owner: Kevin Liang  
-Date: Sep 2, 2025  
+Date: Sep 6, 2025  
 Status: Draft  
 Audience: Client developers, backend developers, QA  
 
@@ -39,7 +39,7 @@ Common HTTP status mappings:
 - 409 Conflict — STALE_DATA
 - 500 Internal Server Error — INTERNAL
 - 503 Service Unavailable — SERVICE_UNAVAILABLE
-- 504 Timeout - TIMOUT
+- 504 Timeout - TIMEOUT
 
 Example error payload (JSON):
 ```json
@@ -100,19 +100,20 @@ GET /health
 ---
 
 ### 5.1.1 Redis Readiness
-Checks if Redis is reachable and responsive. Returns RTT and status.
+Checks if Redis and core threads is reachable and responsive. Returns RTT and status.
 
 GET /health/ready
 
 200
 ```json
 {
-  "ok": true,
+  "redis_ok": true,
+  "core_ok" : true,
   "rtt_ms": 2.1
 }
 ```
-503: Redis not reachable
-504: Redis timeout
+503: Redis or core not reachable
+504: Redis or core timeout
 
 ---
 
@@ -443,13 +444,10 @@ Request body (Pydantic model):
   
   Example: `greeks:AAPL:2025-09-19:150.95:C`
 
-### Historical Greeks (Optional - for analytics)
-- `greeks_hist:symbol:expiry:strike:type:timestamp` →  
-  Same structure as current Greeks, for historical analysis
+### Number of Contracts of each position
+- `positions` →
+  `{ symbol:expiry:strike:type, symbol:expiry:strike:type, ... }`
 
-### Portfolio Data
-- `portfolio:id:positions` →  
-  Set of `position_id`s
-
-- `portfolio:(id):position:(position_id)` →  
-  `{ symbol, expiry, strike, type, units, avg_entry_price, open_ts, last_update_ts }`
+### Portfolio Summary
+- `summary` →  
+  `{ delta, gamma, vega, rho, theta }`

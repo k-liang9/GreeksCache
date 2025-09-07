@@ -11,10 +11,10 @@ router = APIRouter()
 
 @router.get("/contracts", response_model=List[Contract])
 async def get_contracts(request: Request, contract: Contract = Contract()) -> List[Contract]:
-    key = get_contract_key(contract)
+    contract_key = "greeks:" + get_key(contract)
     if not hasattr(request.app.state, "redis"):
         raise AppError(500, "INTERNAL", "could not find redis client")
-    contract_keys = await find_contracts(request.app.state.redis, key)
+    contract_keys = await find_contracts(request.app.state.redis, contract_key)
     if len(contract_keys) == 0:
         raise AppError(400, "INVALID_ARGUMENT", "no contract with specified terms found", contract.model_dump())
     return [contract_key_to_contract(key) for key in contract_keys]

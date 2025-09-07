@@ -2,12 +2,12 @@ from schemas.contracts import Contract
 from typing import List
 import math
 
-def get_contract_key(contract: Contract) -> str:
+def get_key(contract: Contract) -> str:
     symbol = '*' if contract.symbol == "" else contract.symbol
     expiry = '*' if contract.expiry == "" else contract.expiry
     strike = '*' if math.isclose(contract.strike, 0.0, abs_tol=1e-6) else f"{contract.strike:.4f}"
     payoff_type = '*' if contract.type == "" else contract.type
-    return f"greeks:{symbol}:{expiry}:{strike}:{payoff_type}"
+    return f"{symbol}:{expiry}:{strike}:{payoff_type}"
 
 def contract_key_to_contract(contract_key: str) -> Contract:
     parts = contract_key.split(':')
@@ -20,3 +20,7 @@ def contract_key_to_contract(contract_key: str) -> Contract:
         "type": "" if parts[4] == '*' else parts[4]
     }
     return Contract(**raw)
+
+def contract_key_to_positions_key(contract_key: str) -> str:
+    # delete "greeks:"
+    return contract_key[7:]
