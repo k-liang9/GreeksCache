@@ -319,38 +319,11 @@ Request body (Pydantic model):
 
 ---
 
-### 5.7 Add Position
-Adds a new position The API currently does not track portfolios; the position will be recorded globally and can later be associated with a position_id when that feature is added.
+
+### 5.7 Adjust Positions
+Opens, adjusts, and closes positions of lists of exact contracts.
 
 POST /positions
-
-Request body:
-```json
-{
-  "symbol": "AAPL",
-  "expiry": "2025-09-19",
-  "strike": 150.0,
-  "type": "C",
-  "units": 10,
-  "price": 12.34 //optional
-}
-```
-200 OK  
-```json
-{
-  "status": "added"
-}
-```
-400: INVALID_ARGUMENT, NOT_FOUND    
-500: INTERNAL
-
----
-
-
-### 5.8 Adjust Portfolio Positions
-Adjusts units for positions that match a contract.
-
-PATCH /positions/adjust
 
 Request body (Pydantic model):
 ```json
@@ -375,66 +348,6 @@ Request body (Pydantic model):
 
 ---
 
-
-### 5.9 Close Positions
-Closes positions that match a contract across all portfolios.
-
-DELETE /positions/close
-
-Request body (Pydantic model):
-```json
-{
-  "symbol": "AAPL",
-  "expiry": "2025-09-19",
-  "strike": 150.0,
-  "type": "C"
-}
-```
-
-200 OK
-```json
-{
-  "deleted": 3,
-  "status": "deleted"
-}
-```
-400: INVALID_ARGUMENT, NOT_FOUND
-500: INTERNAL
-
----
-
-
-### 5.10 Revalue Positions
-Recomputes and returns aggregated summary greeks for positions that match a contract across all portfolios.
-
-POST /positions/revalue
-
-Request body (Pydantic model):
-```json
-{
-  "symbol": "AAPL",
-  "expiry": "2025-09-19",
-  "strike": 150.0,
-  "type": "C"
-}
-```
-
-200 OK
-```json
-{
-  "summary_greeks": {
-    "delta": 1.23,
-    "gamma": 0.045,
-    "vega": 0.56,
-    "rho": 0.345,
-    "theta": -0.12
-  },
-  "as_of": "2025-08-17T13:45:01Z",
-  "stale": false
-}
-```
-400: INVALID_ARGUMENT, NOT_FOUND
-500: INTERNAL
 
 ## 6: Redis Key Schema
 

@@ -28,13 +28,30 @@ async def find_contracts(r : redis.Redis, key : str) -> List[str]:
             break
     return all_contracts
 
-async def find_units_count(r : redis.Redis, key : str) -> Dict:
+async def get_position_sizes(r : redis.Redis, key : str) -> Dict:
     cursor = 0
     all_positions = {}
     while True:
-        cursor, positions_batch = await r.hscan(name="positions", cursor=cursor, match=key, count=100)
+        cursor, positions_batch = await r.hscan(name="positions", cursor=cursor, match=key, count=100, no_values=False)
         if positions_batch:
             all_positions.update(positions_batch)
         if cursor == 0:
             break
     return all_positions
+
+async def get_position_size(r : redis.Redis, key : str) -> int | None:
+    res = await r.hget("positions", key)
+    if res is None:
+        return None
+    else:
+        return int(res)
+
+async def try_update_position(r : redis.Redis, key : str, add : bool, units_delta : int) -> bool:
+    try:
+        if add:
+            await r.hset("positions", key, str(units_delta))
+        else:
+            await r.hincrby("positions", key, units_delta)
+        return True
+    except:
+        return False

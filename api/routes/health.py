@@ -21,6 +21,8 @@ async def get_redis_health(request: Request):
         start = time.monotonic()
         await asyncio.wait_for(request.app.state.redis.ping(), timeout=0.5)
         rtt_ms = 1000 * (time.monotonic() - start)
+        #TODO: check if core is alive
+        
         request.app.state.redis_heartbeat = {
             "ok": True,
             "last_ok_ts": now_iso8601(),
