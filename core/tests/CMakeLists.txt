@@ -1,11 +1,7 @@
-add_executable(tests
-    src/main.cpp
+add_library(tests
     src/testing_vars.cpp
 )
 
 target_include_directories(tests PUBLIC include)
 
-target_link_libraries(tests PRIVATE orchestrator publish ingest)
-
-enable_testing()
-add_test(NAME tests COMMAND tests)
+target_link_libraries(tests PRIVATE common)

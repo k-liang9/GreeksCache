@@ -1,4 +1,5 @@
 # dependencies
 
-redis-plus-plus
-boost
+redis-plus-plus  
+boost   
+pybind11   

@@ -8,6 +8,7 @@
 #include <iterator>
 #include <boost/lockfree/spsc_queue.hpp>
 #include <sw/redis++/redis++.h>
+#include "runtime.hpp"
 #include "bs_engine.hpp"
 #include "testing_vars.hpp"
 #include "types.hpp"
@@ -21,14 +22,10 @@ using namespace std;
 using namespace sw::redis;
 
 bool g_ready = false;
+StateOrchestrator g_orchestrator = StateOrchestrator();
 
-const bool core_ready() {
-    return g_ready;
-}
-
-int main() {
-    StateOrchestrator orchestrator = StateOrchestrator();
-    orchestrator.initialize_state(test::contracts);
+void run_core() {
+    g_orchestrator.initialize_state(test::contracts);
     GbmSimulator apple_sim = GbmSimulator(
         test::apple_market_conditions.start_ts,
         test::apple_market_conditions.dt,
@@ -49,7 +46,6 @@ int main() {
         test::google_market_conditions.drift,
         test::google_market_conditions.symbol
     );
-    //print_contract_listing(orchestrator);
     // boost::lockfree::spsc_queue<MarketData> apple_market_data_stream{128};
     // boost::lockfree::spsc_queue<MarketData> google_market_data_stream{128};
     MarketMailbox apple_mb{};
@@ -72,11 +68,10 @@ int main() {
         while (!stop.load()) {
             if (apple_mb.read_if_updated(data, apple_seq) || google_mb.read_if_updated(data, google_seq)) {
                 auto now = chrono::steady_clock::now();
-                orchestrator.flush_changes();
+                g_orchestrator.flush_changes();
                 last_flush = now;
 
-                orchestrator.process_tick(data);
-                // print_greeks_tick(data, orchestrator);
+                g_orchestrator.process_tick(data);
             } else {
                 this_thread::sleep_for(chrono::milliseconds(5));
             }
@@ -84,7 +79,7 @@ int main() {
             // Flush changes every 5 seconds
             auto now = chrono::steady_clock::now();
             if (chrono::duration_cast<chrono::seconds>(now - last_flush).count() >= 5) {
-                orchestrator.flush_changes();
+                g_orchestrator.flush_changes();
                 last_flush = now;
             }
         }
@@ -92,7 +87,7 @@ int main() {
 
     thread publisher([&]{
         while (!stop.load()) {
-            orchestrator.redis_publisher().run();
+            g_orchestrator.redis_publisher().run();
         }
     });
 
@@ -119,7 +114,7 @@ int main() {
 
     thread user_changes([&]{
         this_thread::sleep_for(chrono::seconds(3));
-        orchestrator.sink_contract_changes(test::user_changes);
+        g_orchestrator.enqueue_contracts(test::user_changes);
     });
 
     g_ready = true;
@@ -133,6 +128,12 @@ int main() {
     publisher.join();
     reader.join();
     user_changes.join();
+}
 
-    return 0;
+void enqueue_contracts(vector<Contract>& contracts) {
+    g_orchestrator.enqueue_contracts(contracts);
+}
+
+bool core_ready() {
+    return g_ready;
 }

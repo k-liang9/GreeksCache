@@ -145,7 +145,7 @@ void StateOrchestrator::build_and_publish_jobs(unique_ptr<SymbolState>& symbol_s
     }
 }
 
-void StateOrchestrator::sink_contract_changes(vector<Contract>& contracts) {
+void StateOrchestrator::enqueue_contracts(vector<Contract>& contracts) {
     for (Contract& contract : contracts) {
         opened_contracts_.push(std::move(contract));
     }
