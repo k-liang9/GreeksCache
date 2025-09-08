@@ -1,2 +1,4 @@
 fastapi[standard]
 redis[hiredis]
+grpcio
+grpcio-tools

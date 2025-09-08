@@ -3,7 +3,6 @@ import time
 from fastapi import APIRouter, Request
 from utils import *
 from errors import AppError
-from services.core import core_pybind
 
 router = APIRouter()
 
@@ -34,9 +33,6 @@ async def get_redis_health(request: Request):
         raise AppError(504, "TIMEOUT", "redis ping timeout", {"service": "redis"})
     except Exception as e:
         raise AppError(503, "SERVICE_UNAVAILABLE", "redis ping failed", {'service': 'redis', 'error': short(e)})
-
-    if not core_pybind.core_ready():
-        raise AppError(503, "SERVICE_UNAVAILABLE", "core could not be reached", {'service': 'core'})
         
     return {
         "redis_ok": True,
