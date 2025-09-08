@@ -54,7 +54,7 @@ public:
     StateOrchestrator();
 
     void flush_changes();
-    void enqueue_contracts(vector<Contract>& contracts);
+    bool enqueue_contracts(vector<Contract>& contracts);
     void initialize_state(vector<Contract>& contracts);
     void process_tick(MarketData& market_data);
 

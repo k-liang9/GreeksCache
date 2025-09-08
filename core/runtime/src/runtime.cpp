@@ -130,10 +130,11 @@ void run_core() {
     user_changes.join();
 }
 
-void enqueue_contracts(vector<Contract>& contracts) {
-    g_orchestrator.enqueue_contracts(contracts);
+bool enqueue_contracts(vector<Contract>& contracts) {
+    return g_orchestrator.enqueue_contracts(contracts);
 }
 
 bool core_ready() {
+    cout << "checked core ready\n";
     return g_ready;
 }

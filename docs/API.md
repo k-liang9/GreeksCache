@@ -1,7 +1,7 @@
 # Real-Time Greeks Cache -- API Contract (v0.2)
 
 Owner: Kevin Liang  
-Date: Sep 6, 2025  
+Date: Sep 8, 2025  
 Status: Draft  
 Audience: Client developers, backend developers, QA  
 
@@ -247,42 +247,8 @@ Request body (Pydantic model):
 
 ---
 
-### 5.5 Summary
-Fetches all positions and summary greeks.
 
-GET /summary
-
-200 OK  
-```json
-{
-  "positions": [
-    {
-      "symbol": "AAPL",
-      "expiry": "2025-09-19",
-      "strike": 150.0,
-      "type": "C",
-      "units": 10,
-      "price": 12.34
-    }
-    // ...more positions...
-  ],
-  "summary_greeks": {
-    "delta": 1.23,
-    "gamma": 0.045,
-    "vega": 0.56,
-    "rho": 0.453,
-    "theta": -0.12
-  },
-  "stale": false
-}
-```
-400: INVALID_ARGUMENT, NOT_FOUND    
-500: INTERNAL
-
----
-
-
-### 5.6 Positions
+### 5.5 Positions
 Lists all positions that match a contract.
 
 POST /positions/query
@@ -320,7 +286,7 @@ Request body (Pydantic model):
 ---
 
 
-### 5.7 Adjust Positions
+### 5.6 Adjust Positions
 Opens, adjusts, and closes positions of lists of exact contracts.
 
 POST /positions

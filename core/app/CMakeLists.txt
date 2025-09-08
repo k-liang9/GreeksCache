@@ -3,3 +3,5 @@ add_executable(app
 )
 
 target_link_libraries(app PRIVATE runtime)
+
+add_dependencies(app core_pybind)

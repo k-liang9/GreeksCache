@@ -12,3 +12,6 @@ enable_testing()
 add_subdirectory(core)
 add_subdirectory(extern/pybind11)
 add_subdirectory(pybind)
+
+add_custom_target(build_all ALL)
+add_dependencies(build_all core_pybind)
