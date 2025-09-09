@@ -270,6 +270,16 @@ const string payoff_type_to_string(PayoffType type) {
     }
 }
 
+const PayoffType string_to_payoff_type(string_view type) {
+    if (type == "VAN_CALL") {
+        return VAN_CALL;
+    } else if (type == "VAN_PUT") {
+        return VAN_PUT;
+    } else {
+        return PAYOFFTYPE_ERROR;
+    }
+}
+
 int get_payoff_group_id(PayoffType payoff) {
     switch(payoff) {
         case VAN_CALL:

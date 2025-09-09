@@ -6,6 +6,7 @@
 #include <chrono>
 #include <unordered_map>
 #include <iterator>
+#include <functional>
 #include <boost/lockfree/spsc_queue.hpp>
 #include <sw/redis++/redis++.h>
 #include "runtime.hpp"
@@ -17,15 +18,16 @@
 #include "utils.hpp"
 #include "gbm_sim.hpp"
 #include "mailbox.hpp"
+#include "grpc_server.hpp"
 
 using namespace std;
 using namespace sw::redis;
 
 bool g_ready = false;
-StateOrchestrator g_orchestrator = StateOrchestrator();
 
 void run_core() {
-    g_orchestrator.initialize_state(test::contracts);
+    StateOrchestrator orchestrator = StateOrchestrator();
+    orchestrator.initialize_state(test::contracts);
     GbmSimulator apple_sim = GbmSimulator(
         test::apple_market_conditions.start_ts,
         test::apple_market_conditions.dt,
@@ -55,23 +57,16 @@ void run_core() {
 
     atomic<bool> stop{false};
 
-    thread market_sim([&]{
-        while (!stop.load()) {
-            apple_sim.run(apple_mb);
-            google_sim.run(google_mb);
-        }
-    });
-
     thread compute_core([&]{
         MarketData data;
         auto last_flush = chrono::steady_clock::now();
         while (!stop.load()) {
             if (apple_mb.read_if_updated(data, apple_seq) || google_mb.read_if_updated(data, google_seq)) {
                 auto now = chrono::steady_clock::now();
-                g_orchestrator.flush_changes();
+                orchestrator.flush_changes();
                 last_flush = now;
 
-                g_orchestrator.process_tick(data);
+                orchestrator.process_tick(data);
             } else {
                 this_thread::sleep_for(chrono::milliseconds(5));
             }
@@ -79,7 +74,7 @@ void run_core() {
             // Flush changes every 5 seconds
             auto now = chrono::steady_clock::now();
             if (chrono::duration_cast<chrono::seconds>(now - last_flush).count() >= 5) {
-                g_orchestrator.flush_changes();
+                orchestrator.flush_changes();
                 last_flush = now;
             }
         }
@@ -87,7 +82,24 @@ void run_core() {
 
     thread publisher([&]{
         while (!stop.load()) {
-            g_orchestrator.redis_publisher().run();
+            orchestrator.redis_publisher().run();
+        }
+    });
+
+    thread server([&]{
+        using namespace std::placeholders;
+        auto bound_func = bind(&StateOrchestrator::enqueue_contracts, &orchestrator, _1);
+        run_server(core_ready, bound_func);
+    });
+
+
+    ////////////////////////////////////////////TESTING THREADS///////////////////////////////////////
+
+
+    thread market_sim([&]{
+        while (!stop.load()) {
+            apple_sim.run(apple_mb);
+            google_sim.run(google_mb);
         }
     });
 
@@ -114,8 +126,10 @@ void run_core() {
 
     thread user_changes([&]{
         this_thread::sleep_for(chrono::seconds(3));
-        g_orchestrator.enqueue_contracts(test::user_changes);
+        orchestrator.enqueue_contracts(test::user_changes);
     });
+
+    ///////////////////////////////////////////////////END TESTING THREADS/////////////////////////////////
 
     g_ready = true;
     
@@ -123,15 +137,12 @@ void run_core() {
         this_thread::sleep_for(chrono::milliseconds(5));
     }
     stop.store(true);
-    market_sim.join();
     compute_core.join();
     publisher.join();
+    server.join();
+    market_sim.join();
     reader.join();
     user_changes.join();
-}
-
-bool enqueue_contracts(vector<Contract>& contracts) {
-    return g_orchestrator.enqueue_contracts(contracts);
 }
 
 bool core_ready() {

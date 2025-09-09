@@ -7,4 +7,4 @@ find_package(Boost REQUIRED)
 
 target_include_directories(runtime PUBLIC include ${Boost_INCLUDE_DIRS})
 
-target_link_libraries(runtime PUBLIC common orchestrator publish ingest tests)
+target_link_libraries(runtime PUBLIC common orchestrator publish core_grpc ingest tests)

@@ -24,6 +24,7 @@ t_ns s_to_ns(t_s s);
 t_ns yrs_to_ns(double yrs);
 string ns_to_iso8601_ny(t_ns ns, bool show_time);
 const string payoff_type_to_string(PayoffType type);
+const PayoffType string_to_payoff_type(string_view type);
 int get_payoff_group_id(PayoffType payoff);
 bool are_payoffs_in_same_group(PayoffType a, PayoffType b);
 
