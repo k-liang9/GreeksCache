@@ -3,3 +3,7 @@
 .env
 .python-version
 **/__pycache__/
+
+# Generated protobuf files (shared across services)
+/generated/python/*_pb2.py
+/generated/python/*_pb2_grpc.py

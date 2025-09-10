@@ -9,6 +9,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CTest)
 enable_testing()
 
+add_subdirectory(proto)
 add_subdirectory(core)
 
-add_custom_target(build_all ALL)
+# Build everything (C++ and Python) with a single build command
+add_custom_target(build_all ALL
+    DEPENDS app proto_python
+    COMMENT "Building all C++ and Python components"
+)

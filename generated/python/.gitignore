@@ -1,0 +1,6 @@
+# Generated protobuf files - do not edit manually
+# These are shared across all Python services
+*_pb2.py
+*_pb2_grpc.py
+__pycache__/
+*.pyc
