@@ -2,12 +2,14 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
+package grpc_ipc;
+
 service PortfolioUpdates {
     rpc core_alive(google.protobuf.Empty) returns (google.protobuf.Empty) {}
-    rpc enqueue_contracts(stream GrpcContract) returns (google.protobuf.Empty) {}
+    rpc enqueue_contracts(stream Contract) returns (google.protobuf.Empty) {}
 }
 
-message GrpcContract {
+message Contract {
     string symbol = 1;
     string expiry = 2;
     double strike = 3;

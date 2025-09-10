@@ -9,10 +9,10 @@ using namespace std;
 
 PortfolioUpdatesImpl::PortfolioUpdatesImpl(
     const function<bool()>& core_ready_impl,
-    const function<bool(vector<Contract>&)>& enqueue_contracts_impl
+    const function<bool(Contract&)>& enqueue_contract_impl
 ) :
 core_ready_(core_ready_impl),
-enqueue_contracts_(enqueue_contracts_impl) {}
+enqueue_contract_(enqueue_contract_impl) {}
 
 Status PortfolioUpdatesImpl::core_alive(
     ServerContext* context, 
@@ -22,26 +22,28 @@ Status PortfolioUpdatesImpl::core_alive(
     return core_ready_() ? Status::OK : Status::CANCELLED;
 }
 
-Status PortfolioUpdatesImpl::enqueue_contracts(ServerContext* context, ServerReader<GrpcContract>* reader, google::protobuf::Empty* res) {
-    GrpcContract contract_msg;
-    Contract contract;
+Status PortfolioUpdatesImpl::enqueue_contracts(ServerContext* context, ServerReader<grpc_ipc::Contract>* reader, google::protobuf::Empty* res) {
+    grpc_ipc::Contract contract_msg;
 
     bool ok = true;
     int len = 0;
-    vector<Contract> contracts;
+    Contract contract;
     while (reader->Read(&contract_msg)) {
         if (parse_grpc_contract(contract_msg, contract)) {
-            contracts.push_back(contract);
-            ++len;
+            if (!enqueue_contract_(contract)) {
+                ok = false;
+            } else {
+                ++len;
+            }
         } else {
             ok = false;
         }
     }
 
-    return enqueue_contracts_(contracts) && ok ? Status::OK : Status::CANCELLED;
+    return ok ? Status::OK : Status::CANCELLED;
 }
 
-bool parse_grpc_contract(const GrpcContract& contract_msg, Contract& contract) {
+bool parse_grpc_contract(const grpc_ipc::Contract& contract_msg, Contract& contract) {
     contract.symbol = contract_msg.symbol();
     contract.expiry = contract_msg.expiry();
     contract.strike = contract_msg.strike();
@@ -54,10 +56,10 @@ bool parse_grpc_contract(const GrpcContract& contract_msg, Contract& contract) {
 
 void run_server(
     const function<bool()>& core_ready_impl,
-    const function<bool(vector<Contract>&)>& enqueue_contracts_impl
+    const function<bool(Contract&)>& enqueue_contract_impl
 ) {
     string server_address("localhost:8000");
-    PortfolioUpdatesImpl service(core_ready_impl, enqueue_contracts_impl);
+    PortfolioUpdatesImpl service(core_ready_impl, enqueue_contract_impl);
 
     ServerBuilder builder;
     builder.AddListeningPort(server_address, InsecureServerCredentials());

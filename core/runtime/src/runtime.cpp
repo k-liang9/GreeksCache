@@ -88,7 +88,7 @@ void run_core() {
 
     thread server([&]{
         using namespace std::placeholders;
-        auto bound_func = bind(&StateOrchestrator::enqueue_contracts, &orchestrator, _1);
+        auto bound_func = bind(&StateOrchestrator::enqueue_contract, &orchestrator, _1);
         run_server(core_ready, bound_func);
     });
 
@@ -126,7 +126,9 @@ void run_core() {
 
     thread user_changes([&]{
         this_thread::sleep_for(chrono::seconds(3));
-        orchestrator.enqueue_contracts(test::user_changes);
+        for (Contract& contract : test::user_changes) {
+            orchestrator.enqueue_contract(contract);
+        }
     });
 
     ///////////////////////////////////////////////////END TESTING THREADS/////////////////////////////////

@@ -19,24 +19,24 @@ using namespace grpc;
 
 void run_server(
     const function<bool()>& core_ready_impl, 
-    const function<bool(vector<Contract>&)>& enqueue_contracts_impl
+    const function<bool(Contract&)>& enqueue_contract_impl
 );
-bool parse_grpc_contract(const GrpcContract& contract_msg, Contract& contract);
+bool parse_grpc_contract(const grpc_ipc::Contract& contract_msg, Contract& contract);
 
-class PortfolioUpdatesImpl final : public PortfolioUpdates::Service {
+class PortfolioUpdatesImpl final : public grpc_ipc::PortfolioUpdates::Service {
 private:
     const function<bool()>& core_ready_;
-    const function<bool(vector<Contract>&)>& enqueue_contracts_;
+    const function<bool(Contract&)>& enqueue_contract_;
 
 public:
     explicit PortfolioUpdatesImpl(
         const function<bool()>& core_ready_impl,
-        const function<bool(vector<Contract>&)>& enqueue_contracts_impl
+        const function<bool(Contract&)>& enqueue_contract_impl
     );
 
     Status core_alive(ServerContext* context, const google::protobuf::Empty* req, google::protobuf::Empty* res)override;
 
-    Status enqueue_contracts(ServerContext* context, ServerReader<GrpcContract>* contracts, google::protobuf::Empty* res) override;
+    Status enqueue_contracts(ServerContext* context, ServerReader<grpc_ipc::Contract>* contracts, google::protobuf::Empty* res) override;
 };
 
 #endif

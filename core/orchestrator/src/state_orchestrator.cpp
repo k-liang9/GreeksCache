@@ -145,16 +145,13 @@ void StateOrchestrator::build_and_publish_jobs(unique_ptr<SymbolState>& symbol_s
     }
 }
 
-bool StateOrchestrator::enqueue_contracts(vector<Contract>& contracts) {
-    for (Contract& contract : contracts) {
-        if (opened_contracts_.write_available()) {
-            opened_contracts_.push(std::move(contract));
-        } else {
-            return false;
-        }
+bool StateOrchestrator::enqueue_contract(Contract& contract) {
+    if (opened_contracts_.write_available()) {
+        opened_contracts_.push(std::move(contract));
+        return true;
+    } else {
+        return false;
     }
-
-    return true;
 }
 
 void StateOrchestrator::flush_changes() {
