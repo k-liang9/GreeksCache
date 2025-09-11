@@ -62,6 +62,7 @@ async def update_positions_impl(r : redis.Redis, g: CoreGrpcService, orders : Li
     changed = 0
     failed_orders = []
     new_contracts = []
+    pipe = get_redis_pipeline(r)
 
     for order in orders:
         if (
@@ -86,12 +87,13 @@ async def update_positions_impl(r : redis.Redis, g: CoreGrpcService, orders : Li
         elif pos_size + order.units_delta < 0:
             failed_orders.append(order)
             continue
-    
-    #FIXME: need both pipelining AND update_position changed at the same time to be able to be changed
-        if await try_update_position(r, key, is_new, order.units_delta): #TODO: pipeline?
-            changed += 1
-        else:
+        
+        res = await enqueue_position(pipe, key, is_new, order.units_delta)
+        if not res:
             failed_orders.append(order)
+        
+    results = await execute_pipeline(pipe)
+    changed = sum(res is True for res in results)
 
     enqueue_res = g.enqueue_contracts(new_contracts)
 

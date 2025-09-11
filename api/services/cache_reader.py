@@ -46,12 +46,18 @@ async def get_position_size(r : redis.Redis, key : str) -> int | None:
     else:
         return int(res)
 
-async def try_update_position(r : redis.Redis, key : str, add : bool, units_delta : int) -> bool:
+def get_redis_pipeline(r : redis.Redis) -> redis.Redis.pipeline:
+    return r.pipeline()
+
+async def enqueue_position(pipe : redis.Redis.pipeline, key : str, add : bool, units_delta : int) -> bool:
     try:
         if add:
-            await r.hset("positions", key, str(units_delta))
+            await pipe.hset("positions", key, str(units_delta))
         else:
-            await r.hincrby("positions", key, units_delta)
+            await pipe.hincrby("positions", key, units_delta)
         return True
     except:
         return False
+    
+async def execute_pipeline(pipe : redis.Redis.pipeline) -> List[bool]:
+    return await pipe.execute()

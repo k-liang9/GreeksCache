@@ -93,7 +93,7 @@ void run_core() {
     });
 
 
-    ////////////////////////////////////////////TESTING THREADS///////////////////////////////////////
+    ////////////////////////////////////////////SIM/TESTING THREADS///////////////////////////////////////
 
 
     thread market_sim([&]{
@@ -124,12 +124,12 @@ void run_core() {
         }
     });
 
-    thread user_changes([&]{
-        this_thread::sleep_for(chrono::seconds(3));
-        for (Contract& contract : test::user_changes) {
-            orchestrator.enqueue_contract(contract);
-        }
-    });
+    // thread user_changes([&]{
+    //     this_thread::sleep_for(chrono::seconds(3));
+    //     for (Contract& contract : test::user_changes) {
+    //         orchestrator.enqueue_contract(contract);
+    //     }
+    // });
 
     ///////////////////////////////////////////////////END TESTING THREADS/////////////////////////////////
 
@@ -144,7 +144,7 @@ void run_core() {
     server.join();
     market_sim.join();
     reader.join();
-    user_changes.join();
+    // user_changes.join();
 }
 
 bool core_ready() {
