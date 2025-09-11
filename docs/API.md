@@ -109,7 +109,7 @@ GET /health/ready
 {
   "redis_ok": true,
   "core_ok" : true,
-  "rtt_ms": 2.1
+  "redis_rtt_ms": 2.1
 }
 ```
 503: Redis or core not reachable

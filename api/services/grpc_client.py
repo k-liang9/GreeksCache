@@ -6,7 +6,11 @@ This service handles all gRPC communication with the GreeksCache core.
 
 import sys
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable, Iterator
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from errors import AppError
+from schemas.orders import Order
 
 # Add generated protobuf directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'generated', 'python'))
@@ -20,24 +24,10 @@ from google.protobuf import empty_pb2
 class CoreGrpcService:
     """Service for communicating with the GreeksCache core via gRPC."""
     
-    def __init__(self, host: str = "localhost", port: int = 8000):
+    def __init__(self, host: str = "localhost", port: int = 8080):
         self.address = f"{host}:{port}"
-        self._channel = None
-        self._stub = None
-    
-    def __enter__(self):
-        """Context manager entry."""
-        self.connect()
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
-        self.disconnect()
-    
-    def connect(self):
-        """Establish connection to the core service."""
         self._channel = grpc.insecure_channel(self.address)
-        self._stub = core_pb2_grpc.PortfolioUpdatesStub(self._channel)
+        self._stub = core_pb2_grpc.PortfolioUpdatesStub(self._channel)   
     
     def disconnect(self):
         """Close connection to the core service."""
@@ -46,28 +36,22 @@ class CoreGrpcService:
             self._channel = None
             self._stub = None
     
-    def is_core_alive(self) -> bool:
-        """Check if the core service is alive and responding."""
+    def core_ready(self) -> AppError | None:
+        if not self._stub:
+            return AppError(500, "INTERNAL", "gRPC client not connected", {})
+            
         try:
             self._stub.core_alive(empty_pb2.Empty())
-            return True
-        except grpc.RpcError:
-            return False
+            return None
+        except grpc.RpcError as e:
+            status_code = e.code()
+            details = e.details()
+            return AppError(503, "SERVICE_UNAVAILABLE", "gRPC client not connected", {"status_code": status_code.name, "grpc_details": details})
     
     def enqueue_contracts(self, contracts: List[Dict[str, Any]]) -> bool:
-        """
-        Send a list of contracts to the core for processing.
-        
-        Args:
-            contracts: List of contract dictionaries with keys:
-                      - symbol (str): The underlying symbol
-                      - expiry (str): Expiry date (YYYY-MM-DD format)
-                      - strike (float): Strike price
-                      - type (str): Contract type (CALL/PUT)
-        
-        Returns:
-            bool: True if contracts were successfully enqueued
-        """
+        """Send a list of contracts to the core for processing."""
+        if not self._stub:
+            return False               
         try:
             def contract_generator():
                 for contract_dict in contracts:
@@ -82,21 +66,13 @@ class CoreGrpcService:
             self._stub.enqueue_contracts(contract_generator())
             return True
         except grpc.RpcError as e:
-            print(f"Error enqueuing contracts: {e}")
             return False
-
-
-# Convenience functions for direct use
-def check_core_status() -> bool:
-    """Quick check if core is alive."""
-    with CoreGrpcService() as service:
-        return service.is_core_alive()
-
-
-def send_contracts(contracts: List[Dict[str, Any]]) -> bool:
-    """Quick function to send contracts to core."""
-    with CoreGrpcService() as service:
-        return service.enqueue_contracts(contracts)
+        
+    def get_enqueue_contracts_stub(self) -> Callable[[Iterator[core_pb2.Contract]], empty_pb2.Empty] | None:
+        """Get the raw gRPC stub method for advanced usage."""
+        if not self._stub:
+            return None
+        return self._stub.enqueue_contracts
 
 
 # Example usage
@@ -104,7 +80,10 @@ if __name__ == "__main__":
     # Test the service
     print("Testing gRPC connection to core...")
     
-    if check_core_status():
+    grpc_service = CoreGrpcService()  # Auto-connects on init
+    
+    core_error = grpc_service.core_ready()
+    if core_error is None:
         print("✅ Core is alive!")
         
         # Example contracts
@@ -113,19 +92,23 @@ if __name__ == "__main__":
                 "symbol": "AAPL",
                 "expiry": "2025-12-19",
                 "strike": 150.0,
-                "type": "CALL"
+                "type": "VAN_CALL"
             },
             {
                 "symbol": "GOOGL",
                 "expiry": "2025-12-19", 
                 "strike": 2800.0,
-                "type": "PUT"
+                "type": "VAN_PUT"
             }
         ]
         
-        if send_contracts(test_contracts):
+        res = grpc_service.enqueue_contracts(test_contracts)
+        if res:
             print(f"✅ Successfully sent {len(test_contracts)} contracts")
         else:
-            print("❌ Failed to send contracts")
+            print(f"❌ Failed to send contracts")
     else:
-        print("❌ Core is not responding")
+        print(f"❌ Core is not responding: {core_error.message}")
+    
+    # Cleanup when done
+    grpc_service.disconnect()

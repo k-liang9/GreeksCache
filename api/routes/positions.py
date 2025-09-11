@@ -7,6 +7,7 @@ from typing import List, Dict
 from errors import AppError
 from services.keyspace import *
 from services.cache_reader import *
+from services.grpc_client import CoreGrpcService
 
 router = APIRouter()
 
@@ -32,8 +33,10 @@ async def update_positions(
 ) -> ActionStatus:
     if not hasattr(request.app.state, "redis"):
         raise AppError(500, "INTERNAL", "could not find redis client")
+    if not hasattr(request.app.state, "grpc_client"):
+        raise AppError(500, "INTERNAL", "could not find grpc client")
     
-    raw = await update_positions_impl(request.app.state.redis, orders_batch.orders)
+    raw = await update_positions_impl(request.app.state.redis, request.app.state.grpc_client, orders_batch.orders)
     
     return ActionStatus(**raw)
         
@@ -55,9 +58,11 @@ def format_positions(contract_list, units_dict) -> Positions:
     }
     return Positions(**positions_raw)
 
-async def update_positions_impl(r : redis.Redis, orders : List[Order]) -> Dict:
+async def update_positions_impl(r : redis.Redis, g: CoreGrpcService, orders : List[Order]) -> Dict:
     changed = 0
     failed_orders = []
+    new_contracts = []
+
     for order in orders:
         if (
             order.contract.symbol == "" or
@@ -77,17 +82,20 @@ async def update_positions_impl(r : redis.Redis, orders : List[Order]) -> Dict:
                 continue
             else:
                 is_new = True
-                #TODO: flush contract updates into the cpp core
+                new_contracts.append(order.contract.model_dump())
         elif pos_size + order.units_delta < 0:
             failed_orders.append(order)
             continue
-                
-        if await try_update_position(r, key, is_new, order.units_delta):
+    
+    #FIXME: need both pipelining AND update_position changed at the same time to be able to be changed
+        if await try_update_position(r, key, is_new, order.units_delta): #TODO: pipeline?
             changed += 1
         else:
             failed_orders.append(order)
-    
-    if changed == len(orders):
+
+    enqueue_res = g.enqueue_contracts(new_contracts)
+
+    if changed == len(orders) and enqueue_res:
         message = "success"
     else:
         message = "some or all positions updates were unable to be processed"

@@ -34,8 +34,13 @@ async def get_redis_health(request: Request):
     except Exception as e:
         raise AppError(503, "SERVICE_UNAVAILABLE", "redis ping failed", {'service': 'redis', 'error': short(e)})
         
+    if hasattr(request.app.state, "grpc_client"):
+        res = request.app.state.grpc_client.core_ready()
+        if res is not None:
+            raise res
+    
     return {
         "redis_ok": True,
         "core_ok": True,
-        "rtt_ms": rtt_ms
+        "redis_rtt_ms": rtt_ms
     }

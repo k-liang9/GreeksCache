@@ -148,6 +148,5 @@ void run_core() {
 }
 
 bool core_ready() {
-    cout << "checked core ready\n";
     return g_ready;
 }

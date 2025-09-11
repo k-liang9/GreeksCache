@@ -5,6 +5,7 @@ import time
 import asyncio
 from utils import *
 from services.redis_pool import create_redis_pool, close_redis_pool
+from services.grpc_client import CoreGrpcService
 from errors import register_exception_handlers
 from logger import logger
 
@@ -48,6 +49,8 @@ async def redis_heartbeat(app, redis, interval=2):
 async def lifespan(app: FastAPI):
     app.state.redis = await create_redis_pool()
     logger.info("created redis pool")
+    app.state.grpc_client = CoreGrpcService()
+    logger.info("created grpc client")
     app.state.heartbeat_task = asyncio.create_task(redis_heartbeat(app, app.state.redis))
     # - db connection pool
     # - initialize metrics/observability
@@ -60,6 +63,7 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     await close_redis_pool(app.state.redis)
+    app.state.grpc_client.disconnect()
     # - close db pool
     # - flush metrics/logs (last summary line)
     # - cancel background tasks

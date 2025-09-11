@@ -19,7 +19,7 @@ Status PortfolioUpdatesImpl::core_alive(
     const google::protobuf::Empty* req,
     google::protobuf::Empty* res)
 {
-    return core_ready_() ? Status::OK : Status::CANCELLED;
+    return core_ready_() ? Status::OK : Status(StatusCode::UNAVAILABLE, "Core is not ready");
 }
 
 Status PortfolioUpdatesImpl::enqueue_contracts(ServerContext* context, ServerReader<grpc_ipc::Contract>* reader, google::protobuf::Empty* res) {
@@ -40,7 +40,7 @@ Status PortfolioUpdatesImpl::enqueue_contracts(ServerContext* context, ServerRea
         }
     }
 
-    return ok ? Status::OK : Status::CANCELLED;
+    return ok ? Status::OK : Status(StatusCode::INVALID_ARGUMENT, "Failed to process one or more contracts");
 }
 
 bool parse_grpc_contract(const grpc_ipc::Contract& contract_msg, Contract& contract) {
@@ -58,7 +58,7 @@ void run_server(
     const function<bool()>& core_ready_impl,
     const function<bool(Contract&)>& enqueue_contract_impl
 ) {
-    string server_address("localhost:8000");
+    string server_address("localhost:8080");
     PortfolioUpdatesImpl service(core_ready_impl, enqueue_contract_impl);
 
     ServerBuilder builder;
